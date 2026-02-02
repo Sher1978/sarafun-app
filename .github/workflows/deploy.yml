@@ -14,14 +14,19 @@ jobs:
         with:
           channel: 'stable'
           
+      - name: Clean Project
+        run: flutter clean
+        
       - name: Install Dependencies
         run: flutter pub get
         
       - name: Configure Web
-        run: flutter config --enable-web
+        run: |
+          flutter config --enable-web
+          flutter create --platforms web .
         
       - name: Build Web
-        run: flutter build web --release --web-renderer canvaskit --target lib/main.dart
+        run: flutter build web --release --web-renderer canvaskit
         
       - name: Deploy to Firebase Hosting
         uses: w9jds/firebase-action@master
