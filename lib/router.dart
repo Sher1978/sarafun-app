@@ -14,6 +14,9 @@ import 'package:sara_fun/screens/onboarding_screen.dart';
 import 'package:sara_fun/screens/common/profile_screen.dart';
 import 'package:sara_fun/screens/business/master_onboarding_screen.dart';
 import 'package:sara_fun/screens/common/main_layout.dart';
+import 'package:sara_fun/screens/client/service_detail_screen.dart';
+import 'package:sara_fun/screens/client/favorites_screen.dart';
+import 'package:sara_fun/models/service_card_model.dart';
 import 'package:sara_fun/core/providers.dart';
 import 'package:flutter/material.dart';
 
@@ -90,8 +93,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'detail',
                     builder: (context, state) {
-                      // Service detail normally logic
-                      return const SizedBox.shrink(); // Placeholder
+                      final service = state.extra as ServiceCard;
+                      return ServiceDetailScreen(service: service);
                     },
                   ),
                 ],
@@ -151,6 +154,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/favorites',
+        builder: (context, state) => const FavoritesScreen(),
       ),
       GoRoute(
         path: '/scanner',

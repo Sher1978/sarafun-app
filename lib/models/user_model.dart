@@ -21,6 +21,9 @@ class AppUser extends Equatable {
   final String? displayName;
   final String? username;
   final String? businessName;
+  final List<String> favoriteServices;
+  final List<String> favoriteMasters;
+  final double rating; // Added for Masters
 
   const AppUser({
     required this.uid,
@@ -41,6 +44,9 @@ class AppUser extends Equatable {
     this.displayName,
     this.username,
     this.businessName,
+    this.favoriteServices = const [],
+    this.favoriteMasters = const [],
+    this.rating = 0.0,
   });
 
   @override
@@ -63,6 +69,9 @@ class AppUser extends Equatable {
         displayName,
         username,
         businessName,
+        favoriteServices,
+        favoriteMasters,
+        rating,
       ];
 
   AppUser copyWith({
@@ -84,6 +93,9 @@ class AppUser extends Equatable {
     String? displayName,
     String? username,
     String? businessName,
+    List<String>? favoriteServices,
+    List<String>? favoriteMasters,
+    double? rating,
   }) {
     return AppUser(
       uid: uid ?? this.uid,
@@ -104,6 +116,9 @@ class AppUser extends Equatable {
       displayName: displayName ?? this.displayName,
       username: username ?? this.username,
       businessName: businessName ?? this.businessName,
+      favoriteServices: favoriteServices ?? this.favoriteServices,
+      favoriteMasters: favoriteMasters ?? this.favoriteMasters,
+      rating: rating ?? this.rating,
     );
   }
 
@@ -127,6 +142,9 @@ class AppUser extends Equatable {
       'displayName': displayName,
       'username': username,
       'businessName': businessName,
+      'favoriteServices': favoriteServices,
+      'favoriteMasters': favoriteMasters,
+      'rating': rating,
     };
   }
 
@@ -150,6 +168,9 @@ class AppUser extends Equatable {
       displayName: map['displayName'] as String?,
       username: map['username'] as String?,
       businessName: map['businessName'] as String?,
+      favoriteServices: List<String>.from(map['favoriteServices'] ?? []),
+      favoriteMasters: List<String>.from(map['favoriteMasters'] ?? []),
+      rating: (map['rating'] as num? ?? 0.0).toDouble(),
     );
   }
 }

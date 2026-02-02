@@ -359,4 +359,22 @@ class FirebaseService {
       return snapshot.docs.map((doc) => Transaction.fromMap(doc.data())).toList().cast<Transaction>();
     });
   }
+
+  Future<void> toggleFavorite(String uid, String itemId, bool isService) async {
+    final userRef = _firestore.collection('users').doc(uid);
+    final doc = await userRef.get();
+    if (!doc.exists) return;
+
+    final user = AppUser.fromMap(doc.data()!);
+    final field = isService ? 'favoriteServices' : 'favoriteMasters';
+    final List<String> currentList = List<String>.from(doc.data()![field] ?? []);
+
+    if (currentList.contains(itemId)) {
+      currentList.remove(itemId);
+    } else {
+      currentList.add(itemId);
+    }
+
+    await userRef.update({field: currentList});
+  }
 }
