@@ -1,9 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sara_fun/services/firebase_service.dart';
 import 'package:sara_fun/services/telegram_service.dart';
 import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/models/transaction_model.dart';
+
+// Storage Providers
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError();
+});
 
 // Service Providers
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {

@@ -18,8 +18,16 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
   
-  runApp(const ProviderScope(child: SaraFunApp()));
+  runApp(ProviderScope(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+    ],
+    child: const SaraFunApp(),
+  ));
 }
 
 class SaraFunApp extends ConsumerStatefulWidget {

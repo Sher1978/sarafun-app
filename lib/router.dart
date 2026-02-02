@@ -38,18 +38,25 @@ const dummyMaster = AppUser(
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(currentUserProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
   
   return GoRouter(
     initialLocation: '/discovery',
     redirect: (context, state) {
       final user = authState.asData?.value;
       final isLoggedIn = user != null;
+      final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+      
       final isLoggingIn = state.uri.path == '/login';
       final isOnboarding = state.uri.path == '/onboarding';
 
       if (!isLoggedIn) {
-        if (isOnboarding || isLoggingIn) return null;
-        return '/onboarding';
+        if (!onboardingComplete) {
+          if (isOnboarding) return null;
+          return '/onboarding';
+        }
+        if (isLoggingIn || isOnboarding) return null;
+        return '/login';
       }
 
       if (isLoggingIn || isOnboarding) {

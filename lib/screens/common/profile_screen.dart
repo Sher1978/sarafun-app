@@ -6,6 +6,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
 import 'package:sara_fun/core/providers.dart';
 import 'package:sara_fun/models/user_model.dart';
+import 'package:sara_fun/services/referral_engine.dart';
+import 'package:flutter/services.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -43,7 +45,7 @@ class ProfileScreen extends ConsumerWidget {
                 const Gap(40),
                 _buildActionButton(context, user),
                 const Gap(40),
-                _buildInfoSection(user),
+                _buildInfoSection(context, user),
               ],
             ),
           );
@@ -113,10 +115,22 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoSection(AppUser user) {
+  Widget _buildInfoSection(BuildContext context, AppUser user) {
     return Column(
       children: [
         _buildInfoRow("Telegram ID", user.telegramId.toString()),
+        const Gap(16),
+        _buildInfoRow(
+          "Referral Link", 
+          "COPY LINK", 
+          isGold: true, 
+          icon: Icons.link,
+          onTap: () {
+            final link = ReferralEngine.generateDeepLink(referrerId: user.uid);
+            Clipboard.setData(ClipboardData(text: link));
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Link copied to clipboard!")));
+          }
+        ),
         const Gap(16),
         _buildInfoRow("Role", user.role.name.toUpperCase()),
         const Gap(16),
@@ -125,27 +139,38 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {bool isGold = false}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
-          Text(
-            value,
-            style: TextStyle(
-              color: isGold ? AppTheme.primaryGold : Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
+  Widget _buildInfoRow(String label, String value, {bool isGold = false, IconData? icon, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isGold && onTap != null ? AppTheme.primaryGold.withOpacity(0.3) : Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, color: isGold ? AppTheme.primaryGold : Colors.white60, size: 18),
+                  const Gap(12),
+                ],
+                Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
+              ],
             ),
-          ),
-        ],
+            Text(
+              value,
+              style: TextStyle(
+                color: isGold ? AppTheme.primaryGold : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

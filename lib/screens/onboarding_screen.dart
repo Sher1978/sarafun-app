@@ -4,15 +4,17 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
+import 'package:sara_fun/core/providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -42,6 +44,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _onPageChanged(int index) {
     setState(() => _currentPage = index);
+  }
+
+  Future<void> _completeOnboarding() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('onboarding_complete', true);
+    if (mounted) {
+      context.go('/login');
+    }
   }
 
   @override
@@ -95,7 +105,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: [
           if (_currentPage < _pages.length - 1)
             TextButton(
-              onPressed: () => context.go('/login'),
+              onPressed: _completeOnboarding,
               child: const Text(
                 "Skip",
                 style: TextStyle(color: Colors.white54, fontSize: 16),
@@ -132,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: ElevatedButton(
               onPressed: () {
                 if (isLastPage) {
-                  context.go('/login');
+                  _completeOnboarding();
                 } else {
                   _pageController.nextPage(
                     duration: 600.ms,

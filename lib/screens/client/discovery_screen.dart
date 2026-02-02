@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
+import 'package:sara_fun/services/referral_engine.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
 import 'package:sara_fun/models/service_card_model.dart';
 import 'package:sara_fun/core/providers.dart';
@@ -45,54 +46,78 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             
             // Services Section
             _buildSectionHeader("GLOBAL SERVICES"),
-            SizedBox(
-              height: AppTheme.compactCardHeight + 20,
-              child: StreamBuilder<List<ServiceCard>>(
-                stream: firebaseService.getAllServiceCardsStream(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold));
-                  final cards = snapshot.data!.where((card) {
-                    final matchesSearch = card.title.toLowerCase().contains(_searchQuery) ||
-                                        card.description.toLowerCase().contains(_searchQuery);
-                    final matchesCategory = _selectedCategory == "All" || card.category == _selectedCategory;
-                    final matchesMaster = widget.filterMasterId == null || card.masterId == widget.filterMasterId;
-                    return matchesSearch && matchesCategory && matchesMaster;
-                  }).toList();
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final screenHeight = MediaQuery.of(context).size.height;
+                final cardHeight = screenHeight * 0.28; // Dynamic height
+                final cardWidth = cardHeight * 0.72; // Maintain aspect ratio approx
+                
+                return SizedBox(
+                  height: cardHeight + 20,
+                  child: StreamBuilder<List<ServiceCard>>(
+                    stream: firebaseService.getAllServiceCardsStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold));
+                      final cards = snapshot.data!.where((card) {
+                        final matchesSearch = card.title.toLowerCase().contains(_searchQuery) ||
+                                            card.description.toLowerCase().contains(_searchQuery);
+                        final matchesCategory = _selectedCategory == "All" || card.category == _selectedCategory;
+                        final matchesMaster = widget.filterMasterId == null || card.masterId == widget.filterMasterId;
+                        return matchesSearch && matchesCategory && matchesMaster;
+                      }).toList();
 
-                  if (cards.isEmpty) return const Center(child: Text("No services", style: TextStyle(color: Colors.white24)));
+                      if (cards.isEmpty) return const Center(child: Text("No services", style: TextStyle(color: Colors.white24)));
 
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: cards.length,
-                    separatorBuilder: (_, __) => const Gap(16),
-                    itemBuilder: (context, index) => _CompactServiceCard(card: cards[index]),
-                  );
-                },
-              ),
+                      return ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: cards.length,
+                        separatorBuilder: (_, __) => const Gap(16),
+                        itemBuilder: (context, index) => _CompactServiceCard(
+                          card: cards[index],
+                          width: cardWidth,
+                          height: cardHeight,
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
             ),
 
             const Gap(32),
 
             // Masters Section
             _buildSectionHeader("ELITE MASTERS"),
-            SizedBox(
-              height: 180, // Masters card height
-              child: StreamBuilder<List<AppUser>>(
-                stream: firebaseService.getDiscoveryMastersStream(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold));
-                  final masters = snapshot.data!;
-                  
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: masters.length,
-                    separatorBuilder: (_, __) => const Gap(16),
-                    itemBuilder: (context, index) => _CompactMasterCard(master: masters[index]),
-                  );
-                },
-              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final screenHeight = MediaQuery.of(context).size.height;
+                final cardHeight = screenHeight * 0.22;
+                final cardWidth = screenHeight * 0.16;
+
+                return SizedBox(
+                  height: cardHeight + 20, 
+                  child: StreamBuilder<List<AppUser>>(
+                    stream: firebaseService.getDiscoveryMastersStream(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold));
+                      final masters = snapshot.data!;
+                      
+                      return ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: masters.length,
+                        separatorBuilder: (_, __) => const Gap(16),
+                        itemBuilder: (context, index) => _CompactMasterCard(
+                          master: masters[index],
+                          width: cardWidth,
+                          height: cardHeight,
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
             ),
             const Gap(40),
           ],
@@ -189,24 +214,30 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
 
 class _CompactServiceCard extends StatelessWidget {
   final ServiceCard card;
-  const _CompactServiceCard({required this.card});
+  final double width;
+  final double height;
+  const _CompactServiceCard({required this.card, required this.width, required this.height});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: AppTheme.compactCardWidth,
+      width: width,
+      height: height,
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: InkWell(
+        onTap: () => context.push('/discovery/detail', extra: card),
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             child: SizedBox(
-              height: AppTheme.compactImageHeight,
+              height: height * 0.45,
               width: double.infinity,
               child: Stack(
                 children: [
@@ -230,6 +261,25 @@ class _CompactServiceCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: GestureDetector(
+                      onTap: () {
+                         final link = ReferralEngine.generateDeepLink(serviceId: card.id);
+                         Clipboard.setData(ClipboardData(text: link));
+                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Service link copied!")));
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.link, color: AppTheme.primaryGold, size: 14),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -238,6 +288,7 @@ class _CompactServiceCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   card.title,
@@ -274,12 +325,15 @@ class _CompactServiceCard extends StatelessWidget {
 
 class _CompactMasterCard extends StatelessWidget {
   final AppUser master;
-  const _CompactMasterCard({required this.master});
+  final double width;
+  final double height;
+  const _CompactMasterCard({required this.master, required this.width, required this.height});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 140,
+      width: width,
+      height: height,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,

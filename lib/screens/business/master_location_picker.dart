@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:gap/gap.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
+import 'package:sara_fun/core/theme/map_styles.dart';
 
 class MasterLocationPicker extends StatefulWidget {
   final LatLng? initialLocation;
@@ -74,7 +75,10 @@ class _MasterLocationPickerState extends State<MasterLocationPicker> {
               target: _selectedPosition ?? const LatLng(25.2048, 55.2708), // Default to Dubai
               zoom: 12,
             ),
-            onMapCreated: (controller) => _mapController = controller,
+            onMapCreated: (controller) {
+              _mapController = controller;
+              controller.setMapStyle(MapStyles.darkStyle);
+            },
             onTap: (position) => setState(() => _selectedPosition = position),
             markers: _selectedPosition != null
                 ? {
@@ -88,6 +92,20 @@ class _MasterLocationPickerState extends State<MasterLocationPicker> {
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
+          ),
+          Positioned(
+            bottom: 24,
+            left: 24,
+            right: 80, // Leave room for FAB
+            child: ElevatedButton(
+              onPressed: _selectedPosition != null ? _handleSave : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGold,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text("CONFIRM SELECTION", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
           ),
           Positioned(
             bottom: 24,

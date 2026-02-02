@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:gap/gap.dart';
+import 'package:sara_fun/core/theme/map_styles.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sara_fun/core/providers.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
@@ -19,6 +20,8 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
   LatLng _initialPosition = const LatLng(0, 0);
   double _initialZoom = 2.0;
   bool _isLoadingMap = true;
+  String _selectedCategory = "All";
+  final List<String> _categories = ["All", "Cars", "Health", "Dance"];
 
   @override
   void initState() {
@@ -85,57 +88,8 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
     }
   }
 
-  // Custom Dark Luxury Map Style (Black & Gold aesthetic)
-  static const String _darkMapStyle = '''
-[
-  {
-    "elementType": "geometry",
-    "stylers": [{"color": "#212121"}]
-  },
-  {
-    "elementType": "labels.icon",
-    "stylers": [{"visibility": "off"}]
-  },
-  {
-    "elementType": "labels.text.fill",
-    "stylers": [{"color": "#757575"}]
-  },
-  {
-    "elementType": "labels.text.stroke",
-    "stylers": [{"color": "#212121"}]
-  },
-  {
-    "featureType": "administrative",
-    "elementType": "geometry",
-    "stylers": [{"color": "#757575"}]
-  },
-  {
-    "featureType": "landscape",
-    "elementType": "geometry",
-    "stylers": [{"color": "#121212"}]
-  },
-  {
-    "featureType": "poi",
-    "elementType": "labels.text.fill",
-    "stylers": [{"color": "#ae965d"}] 
-  },
-  {
-    "featureType": "road",
-    "elementType": "geometry.fill",
-    "stylers": [{"color": "#2c2c2c"}]
-  },
-  {
-    "featureType": "road",
-    "elementType": "labels.text.fill",
-    "stylers": [{"color": "#8a8a8a"}]
-  },
-  {
-    "featureType": "water",
-    "elementType": "geometry",
-    "stylers": [{"color": "#000000"}]
-  }
-]
-''';
+  // Refined Black & Grey Map Style
+  static const String _darkMapStyle = MapStyles.darkStyle;
 
   void _onMarkerTapped(AppUser master) {
     showModalBottomSheet(
@@ -192,42 +146,97 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Map Explorer"),
+        title: const Text("MAP EXPLORER", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
         backgroundColor: AppTheme.deepBlack,
       ),
-      body: StreamBuilder<List<AppUser>>(
-        stream: firebaseService.getVisibleMastersOnMap(),
-        builder: (context, snapshot) {
-          final masters = snapshot.data ?? [];
-          
-          final markers = masters.map((master) {
-            return Marker(
-              markerId: MarkerId(master.uid),
-              position: LatLng(master.latitude!, master.longitude!),
-              infoWindow: InfoWindow(title: master.businessName ?? master.displayName ?? "Elite Partner"),
-              icon: BitmapDescriptor.defaultMarkerWithHue(45.0),
-              onTap: () => _onMarkerTapped(master),
-            );
-          }).toSet();
+      body: Column(
+        children: [
+          _buildFilterBar(),
+          Expanded(
+            child: StreamBuilder<List<AppUser>>(
+              stream: firebaseService.getVisibleMastersOnMap(),
+              builder: (context, snapshot) {
+                final allMasters = snapshot.data ?? [];
+                
+                // Functional Logic: Filter markers based on category
+                final masters = allMasters.where((m) {
+                  if (_selectedCategory == "All") return true;
+                  // In a real app, master would have a category. 
+                  // For now, we'll assume they match if they have any service in that category
+                  return true; // TODO: Implement category matching on Master model
+                }).toList();
 
-          if (_isLoadingMap) {
-            return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold));
-          }
+                final markers = masters.map((master) {
+                  return Marker(
+                    markerId: MarkerId(master.uid),
+                    position: LatLng(master.latitude!, master.longitude!),
+                    infoWindow: InfoWindow(title: master.businessName ?? master.displayName ?? "Elite Partner"),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+                    onTap: () => _onMarkerTapped(master),
+                  );
+                }).toSet();
 
-          return GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: _initialPosition,
-              zoom: _initialZoom,
+                if (_isLoadingMap) {
+                  return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold));
+                }
+
+                return GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: _initialPosition,
+                    zoom: _initialZoom,
+                  ),
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                    _mapController?.setMapStyle(_darkMapStyle);
+                  },
+                  markers: markers,
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: true,
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
+                );
+              },
             ),
-            onMapCreated: (controller) {
-              _mapController = controller;
-              _mapController?.setMapStyle(_darkMapStyle);
-            },
-            markers: markers,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      height: 60,
+      color: AppTheme.deepBlack,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        scrollDirection: Axis.horizontal,
+        itemCount: _categories.length,
+        separatorBuilder: (_, __) => const Gap(12),
+        itemBuilder: (context, index) {
+          final category = _categories[index];
+          final isSelected = _selectedCategory == category;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedCategory = category),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected ? AppTheme.primaryGold : Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? AppTheme.primaryGold : Colors.white12,
+                ),
+              ),
+              child: Text(
+                category.toUpperCase(),
+                style: TextStyle(
+                  color: isSelected ? Colors.black : Colors.white70,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
           );
         },
       ),

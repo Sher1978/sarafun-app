@@ -104,4 +104,19 @@ class ReferralEngine {
      final num requiredCommission = dealAmount * 0.20;
      return master.depositBalance >= requiredCommission;
   }
+
+  /// Generates a Telegram deep link for referrals or services.
+  static String generateDeepLink({String? referrerId, String? masterId, String? serviceId}) {
+    // Format: https://t.me/YOUR_BOT/app?startapp=L1_CODE_REF2
+    String parameter = "";
+    if (serviceId != null) {
+      parameter = "srv_$serviceId";
+    } else if (masterId != null) {
+      parameter = "biz_$masterId";
+    } else if (referrerId != null) {
+      parameter = "ref_$referrerId";
+    }
+    
+    return "https://t.me/SaraFunDubaiBot/app?startapp=$parameter";
+  }
 }

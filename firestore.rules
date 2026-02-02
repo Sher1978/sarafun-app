@@ -54,5 +54,12 @@ service cloud.firestore {
       // Backend (Functions) will validate balance and perform deduction
       allow create: if isMaster() && request.resource.data.master_id == request.auth.uid;
     }
+    // --- Transactions Collection ---
+    match /transactions/{txId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Creation is usually handled via server-side Batch in processDealTransaction,
+      // which currently runs client-side but uses Batch (which needs create permission if run from client).
+      allow create: if isAuthenticated(); 
+    }
   }
 }
