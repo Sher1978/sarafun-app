@@ -40,25 +40,23 @@ service cloud.firestore {
       allow read: if true; // Publicly visible
       
       // Only Masters can create/update/delete their own cards
-      allow create: if isMaster() && request.resource.data.master_id == request.auth.uid;
-      allow update, delete: if isMaster() && resource.data.master_id == request.auth.uid;
+      allow create: if isMaster() && request.resource.data.masterId == request.auth.uid;
+      allow update, delete: if isMaster() && resource.data.masterId == request.auth.uid;
     }
 
     // --- Deals Collection ---
     match /deals/{dealId} {
       // Participants can read the deal
       allow read: if isAuthenticated() && 
-                  (resource.data.client_id == request.auth.uid || resource.data.master_id == request.auth.uid);
+                  (resource.data.clientId == request.auth.uid || resource.data.masterId == request.auth.uid);
       
       // Only Masters can create a deal
       // Backend (Functions) will validate balance and perform deduction
-      allow create: if isMaster() && request.resource.data.master_id == request.auth.uid;
+      allow create: if isMaster() && request.resource.data.masterId == request.auth.uid;
     }
     // --- Transactions Collection ---
     match /transactions/{txId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      // Creation is usually handled via server-side Batch in processDealTransaction,
-      // which currently runs client-side but uses Batch (which needs create permission if run from client).
+      allow read, write: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated(); 
     }
   }

@@ -49,7 +49,11 @@ final deepLinkDataProvider = StateProvider<DeepLinkData?>((ref) => null);
 final userTransactionsProvider = StreamProvider<List<Transaction>>((ref) {
   final userAsync = ref.watch(currentUserProvider);
   final user = userAsync.asData?.value;
-  if (user == null) return Stream.value([]);
+  
+  // Extra safety: Verify FirebaseAuth has a UID ready
+  final authUser = FirebaseAuth.instance.currentUser;
+  
+  if (user == null || authUser == null) return Stream.value([]);
   
   return ref.watch(firebaseServiceProvider).getTransactionsStream(user.uid);
 });
