@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:sara_fun/services/referral_engine.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
 import 'package:sara_fun/models/service_card_model.dart';
@@ -23,6 +24,35 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   String _searchQuery = "";
   String _selectedCategory = "All";
   final List<String> _categories = ["All", "Cars", "Health", "Dance"];
+  Position? _currentPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+
+      if (permission == LocationPermission.deniedForever) return;
+
+      final position = await Geolocator.getCurrentPosition();
+      if (mounted) {
+        setState(() => _currentPosition = position);
+      }
+    } catch (e) {
+      debugPrint("Error getting location: $e");
+    }
+  }
 
   @override
   void dispose() {
@@ -87,6 +117,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                         width: cardWidth,
                         height: cardHeight,
                         isFavorite: userData?.favoriteServices.contains(cards[index].id) ?? false,
+                        userPosition: _currentPosition,
                         onFavoriteToggle: () {
                           if (userData != null && cards[index].id != null) {
                             firebaseService.toggleFavorite(userData.uid, cards[index].id!, true);
@@ -128,6 +159,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                         width: cardWidth,
                         height: cardHeight,
                         isFavorite: userData?.favoriteMasters.contains(masters[index].uid) ?? false,
+                        userPosition: _currentPosition,
                         onFavoriteToggle: () {
                           if (userData != null) {
                             firebaseService.toggleFavorite(userData.uid, masters[index].uid, false);
@@ -237,13 +269,14 @@ class _CompactServiceCard extends StatelessWidget {
   final double width;
   final double height;
   final bool isFavorite;
-  final VoidCallback onFavoriteToggle;
+  final Position? userPosition;
 
   const _CompactServiceCard({
     required this.card, 
     required this.width, 
     required this.height,
     this.isFavorite = false,
+    this.userPosition,
     required this.onFavoriteToggle,
   });
 
@@ -367,10 +400,14 @@ class _CompactServiceCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "${card.priceStars} Stars",
-                        style: const TextStyle(color: AppTheme.primaryGold, fontSize: 13, fontWeight: FontWeight.bold),
+                        "⭐ 4.8", // Hardcoded per requirements if not in model
+                        style: const TextStyle(color: AppTheme.primaryGold, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
-                      Icon(Icons.arrow_forward_ios, color: AppTheme.primaryGold.withValues(alpha: 0.5), size: 10),
+                      if (userPosition != null) // Distance Placeholder (calculating requires master loc)
+                         Text(
+                          "2.5 km",
+                          style: const TextStyle(color: Colors.white54, fontSize: 10),
+                        ),
                     ],
                   ),
                 ],
@@ -388,13 +425,14 @@ class _CompactMasterCard extends StatelessWidget {
   final double width;
   final double height;
   final bool isFavorite;
-  final VoidCallback onFavoriteToggle;
+  final Position? userPosition;
 
   const _CompactMasterCard({
     required this.master, 
     required this.width, 
     required this.height,
     this.isFavorite = false,
+    this.userPosition,
     required this.onFavoriteToggle,
   });
 
@@ -457,10 +495,24 @@ class _CompactMasterCard extends StatelessWidget {
                       children: [
                         const Icon(Icons.star, color: AppTheme.primaryGold, size: 12),
                         const Gap(4),
-                        Text(
                           master.rating > 0 ? master.rating.toStringAsFixed(1) : "4.8", 
                           style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
                         ),
+                        if (userPosition != null && master.latitude != null && master.longitude != null) ...[
+                          const Gap(6),
+                          Builder(builder: (context) {
+                            final dist = Geolocator.distanceBetween(
+                              userPosition!.latitude, 
+                              userPosition!.longitude, 
+                              master.latitude!, 
+                              master.longitude!
+                            ) / 1000;
+                            return Text(
+                                "${dist.toStringAsFixed(1)} km",
+                                style: const TextStyle(color: AppTheme.primaryGold, fontSize: 10),
+                            );
+                          }),
+                        ],
                       ],
                     ),
                   ],

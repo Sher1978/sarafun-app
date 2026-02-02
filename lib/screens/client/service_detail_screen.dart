@@ -37,6 +37,25 @@ class ServiceDetailScreen extends ConsumerWidget {
                         children: [
                           Text("${service.priceStars} Stars", 
                               style: const TextStyle(color: AppTheme.primaryGold, fontSize: 24, fontWeight: FontWeight.bold)),
+                          
+                          // Service-to-Parent Link
+                          FutureBuilder<AppUser?>(
+                            future: firebaseService.getUser(service.masterId),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) return const SizedBox.shrink();
+                              final master = snapshot.data!;
+                              return TextButton.icon(
+                                onPressed: () {
+                                  context.push(Uri(path: '/discovery', queryParameters: {'masterId': service.masterId}).toString());
+                                },
+                                icon: const Icon(Icons.store, size: 16, color: AppTheme.primaryGold),
+                                label: Text(
+                                  master.businessName ?? master.displayName ?? "View Business",
+                                  style: const TextStyle(color: Colors.white, decoration: TextDecoration.underline),
+                                ),
+                              );
+                            },
+                          ),
                           ElevatedButton.icon(
                             onPressed: () {
                                Navigator.of(context).push(
