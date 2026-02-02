@@ -1,0 +1,54 @@
+name: sara_fun
+description: SaraFun - A Telegram Mini App for loyal referrals.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^13.2.0
+
+  # Firebase
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  cloud_firestore: ^4.15.8
+  firebase_storage: ^11.6.0
+  
+  # UI & Assets
+  image_picker: ^1.0.7
+  google_fonts: ^6.1.0
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^5.0.0
+  flutter_animate: ^4.5.0
+  smooth_page_indicator: ^1.1.0
+  google_maps_flutter: ^2.5.3
+  geolocator: ^10.1.0
+  gap: ^3.0.1
+
+  # Utilities
+  intl: ^0.19.0
+  json_annotation: ^4.8.1
+  equatable: ^2.0.5
+  telegram_web_app: ^0.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.8
+  riverpod_generator: ^2.4.0
+  json_serializable: ^6.7.1
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.10
+
+flutter:
+  uses-material-design: true

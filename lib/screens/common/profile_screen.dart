@@ -1,0 +1,152 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:sara_fun/core/theme/app_theme.dart';
+import 'package:sara_fun/core/providers.dart';
+import 'package:sara_fun/models/user_model.dart';
+
+class ProfileScreen extends ConsumerWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(currentUserProvider);
+
+    return Scaffold(
+      backgroundColor: AppTheme.deepBlack,
+      appBar: AppBar(
+        title: const Text('PROFILE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 2)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: Colors.white70),
+            onPressed: () {
+              // TODO: Settings
+            },
+          ),
+          const Gap(8),
+        ],
+      ),
+      body: userAsync.when(
+        data: (user) {
+          if (user == null) return const Center(child: Text("User not found"));
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                const Gap(40),
+                _buildQrSection(user),
+                const Gap(40),
+                _buildActionButton(context, user),
+                const Gap(40),
+                _buildInfoSection(user),
+              ],
+            ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Center(child: Text("Error: $e")),
+      ),
+    );
+  }
+
+  Widget _buildQrSection(AppUser user) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGold.withOpacity(0.2),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: QrImageView(
+        data: user.uid,
+        version: QrVersions.auto,
+        size: 200.0,
+        eyeStyle: const QrEyeStyle(
+          eyeShape: QrEyeShape.square,
+          color: Colors.black,
+        ),
+        dataModuleStyle: const QrDataModuleStyle(
+          dataModuleShape: QrDataModuleShape.square,
+          color: Colors.black,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(BuildContext context, AppUser user) {
+    final isMaster = user.role == UserRole.master;
+    
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () async {
+          if (isMaster) {
+            context.push('/scanner');
+          } else {
+            context.push('/master-onboarding');
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primaryGold,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 8,
+          shadowColor: AppTheme.primaryGold.withOpacity(0.4),
+        ),
+        child: Text(
+          isMaster ? 'OPEN SCANNER' : 'LAUNCH MY BUSINESS',
+          style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoSection(AppUser user) {
+    return Column(
+      children: [
+        _buildInfoRow("Telegram ID", user.telegramId.toString()),
+        const Gap(16),
+        _buildInfoRow("Role", user.role.name.toUpperCase()),
+        const Gap(16),
+        _buildInfoRow("Balance", "${user.balanceStars} Stars", isGold: true),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, {bool isGold = false}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
+          Text(
+            value,
+            style: TextStyle(
+              color: isGold ? AppTheme.primaryGold : Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
