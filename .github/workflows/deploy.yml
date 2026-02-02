@@ -19,8 +19,16 @@ jobs:
         run: flutter pub get
         
       - name: Build Web
-        run: flutter build web --release --base-href "/"
+        run: |
+          flutter build web --release --base-href "/"
+          cp CNAME build/web/CNAME
         
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-github-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          
       - name: Deploy to Firebase Hosting
         uses: w9jds/firebase-action@master
         with:
