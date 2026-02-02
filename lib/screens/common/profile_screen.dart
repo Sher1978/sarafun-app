@@ -135,6 +135,13 @@ class ProfileScreen extends ConsumerWidget {
         _buildInfoRow("Role", user.role.name.toUpperCase()),
         const Gap(16),
         _buildInfoRow("Balance", "${user.balanceStars} Stars", isGold: true),
+        const Gap(16),
+        _buildInfoRow(
+          "My Favorites", 
+          "VIEW ALL", 
+          icon: Icons.favorite, 
+          onTap: () => context.push('/favorites')
+        ),
       ],
     );
   }

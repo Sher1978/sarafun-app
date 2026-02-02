@@ -134,10 +134,13 @@ export const authenticateTelegram = functions.https.onCall(async (data, context)
         throw new functions.https.HttpsError("invalid-argument", "Missing initData");
     }
 
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN ||
+        process.env.TELEGRAM_TOKEN ||
+        functions.config().telegram?.token;
+
     if (!botToken) {
-        console.error("TELEGRAM_BOT_TOKEN not set in environment");
-        throw new functions.https.HttpsError("internal", "Server configuration error");
+        console.error("Telegram Bot Token not set in environment or config");
+        throw new functions.https.HttpsError("internal", "Server configuration error: Missing Telegram Token");
     }
 
     // 1. Validate Telegram Hash

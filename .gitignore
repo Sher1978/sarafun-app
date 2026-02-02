@@ -83,3 +83,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 firebase.exe
+node_modules/
+**/node_modules/
+functions/node_modules/
+functions/lib/

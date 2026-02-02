@@ -102,7 +102,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> with SingleTi
                 _FavoriteGridItem(
                   title: card.title,
                   imageUrl: card.mediaUrls.isNotEmpty ? card.mediaUrls.first : null,
-                  onTap: () {}, // Navigate to detail
+                  onTap: () => context.push('/discovery/detail', extra: card),
                   isService: true,
                 );
           },
@@ -140,8 +140,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> with SingleTi
             final master = favoriteMasters[index];
             return _FavoriteGridItem(
               title: master.displayName ?? "Elite Partner",
-              imageUrl: null, // Masters don't have images yet, using placeholder
-              onTap: () {}, // Navigate to master profile/discovery
+              imageUrl: null, // Masters don't have images yet
+              onTap: () => context.push(Uri(path: '/discovery', queryParameters: {'masterId': master.uid}).toString()),
               isService: false,
             );
           },
