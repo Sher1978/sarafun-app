@@ -6,6 +6,7 @@ import 'package:sara_fun/router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:sara_fun/services/telegram_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sara_fun/core/providers.dart';
 
 void main() async {
