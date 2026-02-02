@@ -24,6 +24,7 @@ class AppUser extends Equatable {
   final List<String> favoriteServices;
   final List<String> favoriteMasters;
   final double rating; // Added for Masters
+  final bool onboardingComplete;
 
   const AppUser({
     required this.uid,
@@ -47,6 +48,7 @@ class AppUser extends Equatable {
     this.favoriteServices = const [],
     this.favoriteMasters = const [],
     this.rating = 0.0,
+    this.onboardingComplete = false,
   });
 
   @override
@@ -72,6 +74,7 @@ class AppUser extends Equatable {
         favoriteServices,
         favoriteMasters,
         rating,
+        onboardingComplete,
       ];
 
   AppUser copyWith({
@@ -96,6 +99,7 @@ class AppUser extends Equatable {
     List<String>? favoriteServices,
     List<String>? favoriteMasters,
     double? rating,
+    bool? onboardingComplete,
   }) {
     return AppUser(
       uid: uid ?? this.uid,
@@ -119,6 +123,7 @@ class AppUser extends Equatable {
       favoriteServices: favoriteServices ?? this.favoriteServices,
       favoriteMasters: favoriteMasters ?? this.favoriteMasters,
       rating: rating ?? this.rating,
+      onboardingComplete: onboardingComplete ?? this.onboardingComplete,
     );
   }
 
@@ -145,6 +150,7 @@ class AppUser extends Equatable {
       'favoriteServices': favoriteServices,
       'favoriteMasters': favoriteMasters,
       'rating': rating,
+      'onboardingComplete': onboardingComplete,
     };
   }
 
@@ -171,6 +177,7 @@ class AppUser extends Equatable {
       favoriteServices: List<String>.from(map['favoriteServices'] ?? []),
       favoriteMasters: List<String>.from(map['favoriteMasters'] ?? []),
       rating: (map['rating'] as num? ?? 0.0).toDouble(),
+      onboardingComplete: map['onboardingComplete'] as bool? ?? false,
     );
   }
 }

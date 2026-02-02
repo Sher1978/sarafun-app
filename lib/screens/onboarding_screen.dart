@@ -47,10 +47,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
+    // 1. Update SharedPreferences (Legacy/Local Cache)
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setBool('onboarding_complete', true);
+
+    // 2. Update Firestore (Source of Truth)
+    final userAsync = ref.read(currentUserProvider);
+    final user = userAsync.asData?.value;
+    if (user != null) {
+      final updatedUser = user.copyWith(onboardingComplete: true);
+      await ref.read(firebaseServiceProvider).saveUser(updatedUser);
+      ref.read(currentUserProvider.notifier).state = AsyncValue.data(updatedUser);
+    }
+    
     if (mounted) {
-      context.go('/login');
+      context.go('/discovery');
     }
   }
 

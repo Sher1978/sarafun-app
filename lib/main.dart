@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'package:sara_fun/services/telegram_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sara_fun/core/providers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -83,7 +84,19 @@ class _SaraFunAppState extends ConsumerState<SaraFunApp> {
         // We are in Telegram (or Mock)! Sync user.
         final firebaseService = ref.read(firebaseServiceProvider);
         
-        // 1. Sync User (Auth + Profile)
+        // 1. Authenticate via Telegram
+        final String? rawInitData = tgService.getRawInitData();
+        if (rawInitData != null) {
+          await firebaseService.signInWithTelegram(rawInitData);
+        } else if (mockData != null) {
+          // Fallback to anonymous for mock testing if needed, or implement mock auth
+          // For now, let's allow anonymous for mock so development doesn't block
+          if (firebaseService.currentUser == null) {
+            await FirebaseAuth.instance.signInAnonymously();
+          }
+        }
+
+        // 2. Sync Profile
         final appUser = await firebaseService.syncTelegramUser(
           tgUser?.id ?? mockData!['id'], 
           tgUser?.firstName ?? mockData!['first_name'], 
@@ -91,10 +104,10 @@ class _SaraFunAppState extends ConsumerState<SaraFunApp> {
           referrerId: deepLink?.referrerId,
         );
 
-        // 2. Architecture Requirement: Automatic VIP status check
+        // 3. Architecture Requirement: Automatic VIP status check
         final updatedUser = await firebaseService.checkAndRefreshVipStatus(appUser);
         
-        // 3. Update Provider
+        // 4. Update Provider
         ref.read(currentUserProvider.notifier).state = AsyncValue.data(updatedUser);
 
         // 4. Handle Deep Link Navigation

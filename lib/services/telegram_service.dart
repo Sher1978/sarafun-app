@@ -39,6 +39,18 @@ class TelegramService {
     }
   }
 
+  /// Get the raw init data string from Telegram (for backend validation)
+  String? getRawInitData() {
+    try {
+      if (isSupported) {
+        return TelegramWebApp.instance.initData;
+      }
+    } catch (e) {
+      print("Error fetching raw Telegram init data: $e");
+    }
+    return null;
+  }
+
   /// Get the current Telegram User
   WebAppUser? getTelegramUser() {
     try {

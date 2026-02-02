@@ -48,18 +48,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final user = authState.asData?.value;
       final isLoggedIn = user != null;
-      final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
-      
-      final isLoggingIn = state.uri.path == '/login';
-      final isOnboarding = state.uri.path == '/onboarding';
-
       if (!isLoggedIn) {
-        if (!onboardingComplete) {
-          if (isOnboarding) return null;
-          return '/onboarding';
-        }
         if (isLoggingIn || isOnboarding) return null;
         return '/login';
+      }
+
+      if (!user.onboardingComplete) {
+        if (isOnboarding) return null;
+        return '/onboarding';
       }
 
       if (isLoggingIn || isOnboarding) {

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:sara_fun/models/review_model.dart';
@@ -25,6 +26,21 @@ class FirebaseService {
     await _auth.signOut();
   }
 
+  /// Sign in with Telegram using a Custom Token from Cloud Functions.
+  Future<UserCredential> signInWithTelegram(String initData) async {
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('authenticateTelegram')
+          .call({'initData': initData});
+
+      final String customToken = result.data['token'];
+      return await _auth.signInWithCustomToken(customToken);
+    } catch (e) {
+      print("Telegram Auth Error: $e");
+      rethrow;
+    }
+  }
+
   // --- Users ---
   Future<void> saveUser(AppUser user) async {
     await _firestore
@@ -33,29 +49,19 @@ class FirebaseService {
         .set(user.toMap(), SetOptions(merge: true));
   }
 
-  /// Syncs Telegram User with Firestore.
-  /// Returns the AppUser (existing or newly created).
+  /// Syncs Telegram User profile with Firestore.
+  /// Assumes user is already authenticated (via signInWithTelegram).
   Future<AppUser> syncTelegramUser(int telegramId, String firstName, String? username, {String? referrerId}) async {
-    // 0. Ensure we are authenticated (Anonymous or otherwise) to satisfy Firestore Rules
-    String uid;
-    if (_auth.currentUser != null) {
-      uid = _auth.currentUser!.uid;
-    } else {
-      // Sign in anonymously to get a UID
-      final cred = await _auth.signInAnonymously();
-      uid = cred.user!.uid;
-    }
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) throw Exception("User must be authenticated to sync profile");
 
-    // 1. Check if user exists by telegramId
-    final query = await _firestore
-        .collection('users')
-        .where('telegramId', isEqualTo: telegramId)
-        .limit(1)
-        .get();
+    // 1. Check if user document exists (using uid as doc ID)
+    final docRef = _firestore.collection('users').doc(uid);
+    final doc = await docRef.get();
 
-    if (query.docs.isNotEmpty) {
+    if (doc.exists) {
       // User exists
-      return AppUser.fromMap(query.docs.first.data());
+      return AppUser.fromMap(doc.data()!);
     } else {
       // 2. Create new user using the current UID
       final newUser = AppUser(
@@ -67,8 +73,9 @@ class FirebaseService {
         isVip: false,
         dealCountMonthly: 0,
         referrerId: referrerId,
-        referralPath: [], // In a real app, logic to build this path from referrerId would happen here or in Cloud Functions
+        referralPath: [],
         displayName: firstName,
+        username: username,
       );
 
       await saveUser(newUser);
