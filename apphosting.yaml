@@ -1,0 +1,5 @@
+# Firebase App Hosting configuration
+# Documentation: https://firebase.google.com/docs/app-hosting
+
+buildSettings:
+  buildCommand: flutter build web --web-renderer canvaskit
