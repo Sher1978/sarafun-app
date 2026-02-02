@@ -44,12 +44,18 @@ class AppTheme {
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryGold,
         foregroundColor: Colors.black,
-        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+        textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        minimumSize: const Size(80, 40),
       ),
     ),
   );
+
+  // Compact UI Constants (60% smaller baseline)
+  static const double compactCardWidth = 160.0;
+  static const double compactCardHeight = 220.0;
+  static const double compactImageHeight = 100.0;
 }

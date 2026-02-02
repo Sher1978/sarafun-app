@@ -34,99 +34,139 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     return Scaffold(
       backgroundColor: AppTheme.deepBlack,
       appBar: AppBar(
-        title: const Text("Discovery", style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+        title: const Text("Discovery", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 16)),
         backgroundColor: Colors.transparent,
       ),
-      body: Column(
-        children: [
-          _buildSearchAndFilter(),
-          _buildCategorySlider(),
-          Expanded(
-            child: StreamBuilder<List<ServiceCard>>(
-              stream: firebaseService.getAllServiceCardsStream(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.white54)));
-                }
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold));
-                }
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSearchAndFilter(),
+            
+            // Services Section
+            _buildSectionHeader("GLOBAL SERVICES"),
+            SizedBox(
+              height: AppTheme.compactCardHeight + 20,
+              child: StreamBuilder<List<ServiceCard>>(
+                stream: firebaseService.getAllServiceCardsStream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold));
+                  final cards = snapshot.data!.where((card) {
+                    final matchesSearch = card.title.toLowerCase().contains(_searchQuery) ||
+                                        card.description.toLowerCase().contains(_searchQuery);
+                    final matchesCategory = _selectedCategory == "All" || card.category == _selectedCategory;
+                    final matchesMaster = widget.filterMasterId == null || card.masterId == widget.filterMasterId;
+                    return matchesSearch && matchesCategory && matchesMaster;
+                  }).toList();
 
-                final allCards = snapshot.data!;
-                final filteredCards = allCards.where((card) {
-                  final matchesSearch = card.title.toLowerCase().contains(_searchQuery) ||
-                                      card.description.toLowerCase().contains(_searchQuery);
-                  final matchesCategory = _selectedCategory == "All" || card.category == _selectedCategory;
-                  final matchesMaster = widget.filterMasterId == null || card.masterId == widget.filterMasterId;
-                  return matchesSearch && matchesCategory && matchesMaster;
-                }).toList();
+                  if (cards.isEmpty) return const Center(child: Text("No services", style: TextStyle(color: Colors.white24)));
 
-                if (filteredCards.isEmpty) {
-                  return const Center(child: Text("No services found in this category.", style: TextStyle(color: Colors.white54)));
-                }
-
-                return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  itemCount: filteredCards.length,
-                  separatorBuilder: (_, __) => const Gap(24),
-                  itemBuilder: (context, index) {
-                    final card = filteredCards[index];
-                    return _ServiceCardItem(card: card);
-                  },
-                );
-              },
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: cards.length,
+                    separatorBuilder: (_, __) => const Gap(16),
+                    itemBuilder: (context, index) => _CompactServiceCard(card: cards[index]),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+
+            const Gap(32),
+
+            // Masters Section
+            _buildSectionHeader("ELITE MASTERS"),
+            SizedBox(
+              height: 180, // Masters card height
+              child: StreamBuilder<List<AppUser>>(
+                stream: firebaseService.getDiscoveryMastersStream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold));
+                  final masters = snapshot.data!;
+                  
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: masters.length,
+                    separatorBuilder: (_, __) => const Gap(16),
+                    itemBuilder: (context, index) => _CompactMasterCard(master: masters[index]),
+                  );
+                },
+              ),
+            ),
+            const Gap(40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: AppTheme.primaryGold,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 2,
+        ),
       ),
     );
   }
 
   Widget _buildSearchAndFilter() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-      child: TextField(
-        controller: _searchController,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: "Search services...",
-          hintStyle: const TextStyle(color: Colors.white24),
-          prefixIcon: const Icon(Icons.search, color: AppTheme.primaryGold),
-          filled: true,
-          fillColor: Colors.white.withOpacity(0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: "Search services...",
+              hintStyle: const TextStyle(color: Colors.white24),
+              prefixIcon: const Icon(Icons.search, color: AppTheme.primaryGold, size: 20),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.toLowerCase();
+              });
+            },
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value.toLowerCase();
-          });
-        },
+          const Gap(16),
+          _buildCategorySlider(),
+        ],
       ),
     );
   }
 
   Widget _buildCategorySlider() {
     return SizedBox(
-      height: 45,
+      height: 36,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const Gap(12),
+        separatorBuilder: (_, __) => const Gap(8),
         itemBuilder: (context, index) {
           final category = _categories[index];
           final isSelected = _selectedCategory == category;
           return GestureDetector(
             onTap: () => setState(() => _selectedCategory = category),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: isSelected ? AppTheme.primaryGold : Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: isSelected ? AppTheme.primaryGold : Colors.white12,
                 ),
@@ -135,7 +175,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                 category,
                 style: TextStyle(
                   color: isSelected ? Colors.black : Colors.white70,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.normal,
+                  fontSize: 11,
                 ),
               ),
             ),
@@ -146,33 +187,26 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   }
 }
 
-class _ServiceCardItem extends StatelessWidget {
+class _CompactServiceCard extends StatelessWidget {
   final ServiceCard card;
-  const _ServiceCardItem({required this.card});
+  const _CompactServiceCard({required this.card});
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: AppTheme.compactCardWidth,
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image Section
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             child: SizedBox(
-              height: 180,
+              height: AppTheme.compactImageHeight,
               width: double.infinity,
               child: Stack(
                 children: [
@@ -180,21 +214,19 @@ class _ServiceCardItem extends StatelessWidget {
                       ? Image.network(card.mediaUrls.first, fit: BoxFit.cover, width: double.infinity,
                           errorBuilder: (context, error, stackTrace) =>
                               const Center(child: Icon(Icons.image_not_supported, color: Colors.white24)))
-                      : const Center(child: Icon(Icons.spa, size: 50, color: Colors.white24)),
-                  // Category Badge
+                      : const Center(child: Icon(Icons.spa, size: 30, color: Colors.white24)),
                   Positioned(
-                    top: 16,
-                    right: 16,
+                    top: 8,
+                    right: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.primaryGold.withOpacity(0.3)),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         card.category,
-                        style: const TextStyle(color: AppTheme.primaryGold, fontSize: 10, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: AppTheme.primaryGold, fontSize: 8, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -203,78 +235,77 @@ class _ServiceCardItem extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        card.title,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Gap(8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryGold.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.star_rounded, color: AppTheme.primaryGold, size: 16),
-                          Gap(4),
-                          Text("4.9", style: TextStyle(color: AppTheme.primaryGold, fontWeight: FontWeight.bold, fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                  ],
+                Text(
+                  card.title,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const Gap(8),
+                const Gap(4),
                 Text(
                   card.description,
-                  style: const TextStyle(color: Colors.white54, height: 1.4),
+                  style: const TextStyle(color: Colors.white54, fontSize: 10, height: 1.2),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const Gap(20),
+                const Gap(12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("Price", style: TextStyle(color: Colors.white24, fontSize: 12)),
-                        Text("${card.priceStars} Stars", style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                      ],
+                    Text(
+                      "${card.priceStars} Stars",
+                      style: const TextStyle(color: AppTheme.primaryGold, fontSize: 13, fontWeight: FontWeight.bold),
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.push('/confirm-deal', extra: {
-                          'serviceTitle': card.title,
-                          'serviceId': card.id ?? '',
-                          'masterName': "Partner", // Will be fetched in ConfirmDealScreen
-                          'masterId': card.masterId,
-                          'amountStars': card.priceStars,
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryGold,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text("View Details", style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
+                    Icon(Icons.arrow_forward_ios, color: AppTheme.primaryGold.withOpacity(0.5), size: 10),
                   ],
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactMasterCard extends StatelessWidget {
+  final AppUser master;
+  const _CompactMasterCard({required this.master});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 140,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.primaryGold.withOpacity(0.1)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: AppTheme.primaryGold.withOpacity(0.1),
+            child: const Icon(Icons.person, color: AppTheme.primaryGold, size: 30),
+          ),
+          const Gap(12),
+          Text(
+            master.displayName ?? "Elite Partner",
+            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const Gap(4),
+          const Text(
+            "TOP RATED",
+            style: TextStyle(color: AppTheme.primaryGold, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1),
           ),
         ],
       ),

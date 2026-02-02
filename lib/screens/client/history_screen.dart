@@ -21,11 +21,11 @@ class HistoryScreen extends ConsumerWidget {
     if (initialData != null && initialData!.isNotEmpty) {
       return Scaffold(
         backgroundColor: AppTheme.deepBlack,
-        appBar: AppBar(title: const Text("Transaction History"), backgroundColor: Colors.transparent, elevation: 0),
+        appBar: AppBar(title: const Text("PAYMENT HISTORY", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.5)), backgroundColor: Colors.transparent, elevation: 0),
         body: ListView.separated(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           itemCount: initialData!.length,
-          separatorBuilder: (_, __) => const Gap(12),
+          separatorBuilder: (_, __) => const Gap(8),
           itemBuilder: (context, index) {
             final item = initialData![index];
             if (item is Transaction) {
@@ -39,7 +39,7 @@ class HistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.deepBlack,
-      appBar: AppBar(title: const Text("Booking History"), backgroundColor: Colors.transparent, elevation: 0),
+      appBar: AppBar(title: const Text("BOOKING HISTORY", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.5)), backgroundColor: Colors.transparent, elevation: 0),
       body: StreamBuilder<List<Deal>>(
         stream: firebaseService.getDealsForUser(client.uid, isClient: true),
         builder: (context, snapshot) {
@@ -52,15 +52,15 @@ class HistoryScreen extends ConsumerWidget {
 
           final deals = snapshot.data!;
           if (deals.isEmpty) {
-            return const Center(child: Text("No transactions yet.", style: TextStyle(color: Colors.white54)));
+            return const Center(child: Text("No transactions yet.", style: TextStyle(color: Colors.white24, fontSize: 12)));
           }
 
           deals.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             itemCount: deals.length,
-            separatorBuilder: (_, __) => const Gap(12),
+            separatorBuilder: (_, __) => const Gap(8),
             itemBuilder: (context, index) {
               final deal = deals[index];
               return _buildDealItem(deal);
@@ -76,31 +76,32 @@ class HistoryScreen extends ConsumerWidget {
     final isIncoming = tx.type != TransactionType.withdrawal && tx.type != TransactionType.payment;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.03)),
       ),
       child: Row(
         children: [
           Icon(
             isIncoming ? Icons.south_west_rounded : Icons.north_east_rounded,
             color: AppTheme.primaryGold,
-            size: 20,
+            size: 18,
           ),
-          const Gap(16),
+          const Gap(12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tx.note, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                Text(dateStr, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                Text(tx.note, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(dateStr, style: const TextStyle(color: Colors.white38, fontSize: 11)),
               ],
             ),
           ),
           Text(
             '${isIncoming ? '+' : '-'}${tx.amount}',
-            style: const TextStyle(color: AppTheme.primaryGold, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: AppTheme.primaryGold, fontWeight: FontWeight.w900, fontSize: 15),
           ),
         ],
       ),
@@ -108,31 +109,44 @@ class HistoryScreen extends ConsumerWidget {
   }
 
   Widget _buildDealItem(Deal deal) {
-    final dateStr = DateFormat('MMM d, yyyy • HH:mm').format(deal.createdAt);
+    final dateStr = DateFormat('MMM d • HH:mm').format(deal.createdAt);
     final cashback = deal.commissionDistribution['clientReward'] ?? 0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.03)),
       ),
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: CircleAvatar(
-          backgroundColor: AppTheme.primaryGold.withOpacity(0.1),
-          child: const Icon(Icons.shopping_bag_outlined, color: AppTheme.primaryGold),
-        ),
-        title: Text("${deal.amountStars} Stars Paid", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        subtitle: Text(dateStr, style: const TextStyle(color: Colors.white54)),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            const Text("Cashback", style: TextStyle(fontSize: 10, color: Colors.white54)),
-            Text("+$cashback", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGold.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.shopping_bag_outlined, color: AppTheme.primaryGold, size: 18),
+          ),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("${deal.amountStars} Stars Paid", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(dateStr, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text("CASHBACK", style: TextStyle(fontSize: 8, color: Colors.white38, fontWeight: FontWeight.w900)),
+              Text("+$cashback", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w900, fontSize: 15)),
+            ],
+          ),
+        ],
       ),
     );
   }

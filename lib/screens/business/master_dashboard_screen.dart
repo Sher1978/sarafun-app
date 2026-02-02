@@ -16,367 +16,6 @@ class MasterDashboardScreen extends ConsumerWidget {
 
   const MasterDashboardScreen({super.key, required this.master});
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final serviceStream = ref.watch(firebaseServiceProvider).getServiceCardsStream(master.uid);
-
-    return Scaffold(
-      backgroundColor: AppTheme.deepBlack,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text(
-          'PARTNER DASHBOARD',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 2,
-          ),
-        ),
-        backgroundColor: AppTheme.deepBlack.withOpacity(0.8),
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.white70),
-            onPressed: () {},
-          ),
-          const Gap(8),
-        ],
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          children: [
-            const Gap(100),
-            _buildTopCard(context),
-            _buildLowBalanceAlert(master.depositBalance.toInt()),
-            _buildStatsSection(master),
-            _buildActionButtons(context),
-            const Gap(32),
-            _buildLocationSection(context, ref),
-            const Gap(32),
-            _buildServiceGridSection(context, serviceStream, ref),
-            const Gap(40),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopCard(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFFFFD700),
-              Color(0xFFFFE14D),
-              Color(0xFFB8860B),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'OPERATING DEPOSIT',
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2,
-              ),
-            ),
-            const Gap(16),
-            Row(
-              children: [
-                const Icon(Icons.stars_rounded, color: Colors.black, size: 32),
-                const Gap(12),
-                Text(
-                  '${master.depositBalance}',
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.95, 0.95)),
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => context.push('/scanner'),
-              icon: const Icon(Icons.qr_code_scanner_rounded),
-              label: const Text('SCAN QR'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGold,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-            ),
-          ),
-          const Gap(16),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {}, // Add deposit logic here
-              icon: const Icon(Icons.add_card_rounded),
-              label: const Text('TOP UP'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primaryGold,
-                side: const BorderSide(color: AppTheme.primaryGold),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLowBalanceAlert(int balance) {
-    final bool isLow = balance < 1000;
-    if (!isLow) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: AppTheme.errorRed.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.errorRed.withOpacity(0.3)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: AppTheme.errorRed, size: 20),
-            const Gap(12),
-            const Expanded(
-              child: Text(
-                'Low Balance Alert: Top up to stay visible',
-                style: TextStyle(
-                  color: AppTheme.errorRed,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-       .custom(
-         duration: 1500.ms,
-         builder: (context, value, child) => Container(
-           decoration: BoxDecoration(
-             borderRadius: BorderRadius.circular(12),
-             boxShadow: [
-               BoxShadow(
-                 color: AppTheme.errorRed.withOpacity(0.15 * value),
-                 blurRadius: 10 * value,
-                 spreadRadius: 2 * value,
-               ),
-             ],
-           ),
-           child: child,
-         ),
-       ),
-    );
-  }
-
-  Widget _buildStatsSection(AppUser master) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatCard(
-              'MONTHLY DEALS',
-              '${master.dealCountMonthly}',
-              Icons.trending_up_rounded,
-            ),
-          ),
-          const Gap(16),
-          Expanded(
-            child: _buildStatCard(
-              'CURRENT STATUS',
-              master.isVip ? 'VIP' : 'Standard',
-              master.isVip ? Icons.workspace_premium_rounded : Icons.star_outline_rounded,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppTheme.primaryGold, size: 20),
-          const Gap(12),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF8E8E93),
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-            ),
-          ),
-          const Gap(4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationSection(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.location_on_rounded, color: AppTheme.primaryGold, size: 24),
-                Gap(12),
-                Text(
-                  'BUSINESS LOCATION',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ],
-            ),
-            const Gap(24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Show on Map',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Gap(4),
-                    Text(
-                      'Allow clients to find you',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
-                    ),
-                  ],
-                ),
-                Switch.adaptive(
-                  value: master.isMapVisible,
-                  activeColor: AppTheme.primaryGold,
-                  onChanged: (value) async {
-                    await ref.read(firebaseServiceProvider).updateUserLocation(
-                      master.uid,
-                      isMapVisible: value,
-                      lat: value ? master.latitude : null,
-                      lng: value ? master.longitude : null,
-                    );
-                    // Update current user state in provider to reflect change immediately
-                    final updatedUser = master.copyWith(
-                      isMapVisible: value,
-                      latitude: value ? master.latitude : null,
-                      longitude: value ? master.longitude : null,
-                    );
-                    ref.read(currentUserProvider.notifier).state = AsyncValue.data(updatedUser);
-                  },
-                ),
-              ],
-            ),
-            if (master.isMapVisible) ...[
-              const Gap(24),
-              const Divider(color: Colors.white10),
-              const Gap(16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Current Coordinates',
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
-                        ),
-                        const Gap(4),
-                        Text(
-                          master.latitude != null 
-                            ? '${master.latitude!.toStringAsFixed(4)}, ${master.longitude!.toStringAsFixed(4)}'
-                            : 'Location not set',
-                          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => _openLocationPicker(context, ref),
-                    icon: const Icon(Icons.edit_location_alt_rounded, color: AppTheme.primaryGold),
-                    label: const Text(
-                      'Change',
-                      style: TextStyle(color: AppTheme.primaryGold, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   void _openLocationPicker(BuildContext context, WidgetRef ref) {
     Navigator.push(
       context,
@@ -404,56 +43,144 @@ class MasterDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildServiceGridSection(BuildContext context, Stream<List<ServiceCard>> stream, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            'YOUR SERVICES',
-            style: TextStyle(
-              color: Color(0xFF8E8E93),
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.5,
-            ),
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('BUSINESS PANEL', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.location_on, size: 20),
+            onPressed: () => _openLocationPicker(context, ref),
           ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildBalanceCard(context),
+            const Gap(32),
+            _buildSectionHeader("MY SERVICES"),
+            const Gap(16),
+            _buildServiceList(ref),
+            const Gap(32),
+            _buildSectionHeader("BUSINESS TOOLS"),
+            const Gap(16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _buildCompactToolButton(
+                  context,
+                  icon: Icons.qr_code_scanner,
+                  label: "SCANNER",
+                  onPressed: () => context.push('/scanner'),
+                ),
+                _buildCompactToolButton(
+                  context,
+                  icon: Icons.add_circle_outline,
+                  label: "NEW SERVICE",
+                  onPressed: () => _showAddServiceDialog(context, ref),
+                ),
+                _buildCompactToolButton(
+                  context,
+                  icon: Icons.history,
+                  label: "HISTORY",
+                  onPressed: () => context.push('/business/history'),
+                ),
+              ],
+            ),
+          ],
         ),
-        const Gap(16),
-        StreamBuilder<List<ServiceCard>>(
-          stream: stream,
-          builder: (context, snapshot) {
-            final List<ServiceCard> services = snapshot.data ?? [];
-            
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.4,
-              ),
-              itemCount: 10, // Fixed to 10 slots
-              itemBuilder: (context, index) {
-                if (index < services.length) {
-                  return _buildServiceItem(services[index]);
-                } else {
-                  return _buildAddServiceSlot(context, ref);
-                }
-              },
-            );
-          },
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildServiceItem(ServiceCard service) {
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: AppTheme.primaryGold,
+        fontSize: 12,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 2,
+      ),
+    );
+  }
+
+  Widget _buildCompactToolButton(BuildContext context, {required IconData icon, required String label, required VoidCallback onPressed}) {
+    return SizedBox(
+      width: (MediaQuery.of(context).size.width - 48 - 12) / 2,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 16),
+        label: Text(label, style: const TextStyle(fontSize: 11)),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBalanceCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.primaryGold.withOpacity(0.1)),
+      ),
+      child: Column(
+        children: [
+          const Text("DEPOSIT BALANCE", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const Gap(8),
+          Text("${master.depositBalance} Stars", style: const TextStyle(color: AppTheme.primaryGold, fontSize: 24, fontWeight: FontWeight.w900)),
+          const Gap(16),
+          const Text("Status: Active & Visible", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceList(WidgetRef ref) {
+    final firebaseService = ref.read(firebaseServiceProvider);
+    return StreamBuilder<List<ServiceCard>>(
+      stream: firebaseService.getServiceCardsStream(master.uid),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final cards = snapshot.data!;
+
+        if (cards.isEmpty) {
+          return const Center(child: Text("No services created yet.", style: TextStyle(color: Colors.white24)));
+        }
+
+        return SizedBox(
+          height: AppTheme.compactCardHeight + 10,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: cards.length,
+            separatorBuilder: (_, __) => const Gap(16),
+            itemBuilder: (context, index) {
+              return _CompactMasterServiceCard(card: cards[index]);
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CompactMasterServiceCard extends StatelessWidget {
+  final ServiceCard card;
+  const _CompactMasterServiceCard({required this.card});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: AppTheme.compactCardWidth,
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(20),
@@ -462,46 +189,40 @@ class MasterDashboardScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Icon(Icons.circle, color: Color(0xFF34C759), size: 8),
-              Text(
-                '${service.priceStars} Stars',
-                style: const TextStyle(
-                  color: AppTheme.primaryGold,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-          const Gap(12),
-          Text(
-            service.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            child: SizedBox(
+              height: AppTheme.compactImageHeight,
+              width: double.infinity,
+              child: card.mediaUrls.isNotEmpty
+                  ? Image.network(card.mediaUrls.first, fit: BoxFit.cover)
+                  : const Center(child: Icon(Icons.spa, color: Colors.white24)),
             ),
           ),
-          const Gap(4),
-          Text(
-            service.description,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
-              fontSize: 11,
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(card.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900), maxLines: 1),
+                const Gap(4),
+                Text("${card.priceStars} Stars", style: const TextStyle(color: AppTheme.primaryGold, fontSize: 11, fontWeight: FontWeight.bold)),
+                const Gap(8),
+                Row(
+                  children: [
+                    Icon(card.isActive ? Icons.visibility : Icons.visibility_off, size: 12, color: card.isActive ? Colors.green : Colors.red),
+                    const Gap(4),
+                    Text(card.isActive ? "ACTIVE" : "HIDDEN", style: TextStyle(fontSize: 9, color: card.isActive ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-
+}
   Widget _buildAddServiceSlot(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () => _showAddServiceDialog(context, ref),

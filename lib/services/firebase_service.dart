@@ -303,6 +303,18 @@ class FirebaseService {
     });
   }
 
+  Stream<List<AppUser>> getDiscoveryMastersStream() {
+    return _firestore
+        .collection('users')
+        .where('role', isEqualTo: UserRole.master.name)
+        .where('isVisible', isEqualTo: true)
+        .limit(20)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => AppUser.fromMap(doc.data())).toList();
+    });
+  }
+
   Stream<List<AppUser>> getVisibleMastersOnMap() {
     return _firestore
         .collection('users')
