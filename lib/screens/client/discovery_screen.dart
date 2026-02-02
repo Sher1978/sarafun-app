@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:sara_fun/services/referral_engine.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
 import 'package:sara_fun/models/service_card_model.dart';
+import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/core/providers.dart';
 import 'package:sara_fun/screens/client/service_detail_screen.dart';
 
@@ -311,13 +313,14 @@ class _CompactServiceCard extends StatelessWidget {
                       "${card.priceStars} Stars",
                       style: const TextStyle(color: AppTheme.primaryGold, fontSize: 13, fontWeight: FontWeight.bold),
                     ),
-                    Icon(Icons.arrow_forward_ios, color: AppTheme.primaryGold.withOpacity(0.5), size: 10),
+                    Icon(Icons.arrow_forward_ios, color: AppTheme.primaryGold.withValues(alpha: 0.5), size: 10),
                   ],
                 ),
               ],
             ),
           ),
         ],
+      ),
       ),
     );
   }

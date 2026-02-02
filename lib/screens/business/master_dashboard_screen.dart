@@ -171,58 +171,7 @@ class MasterDashboardScreen extends ConsumerWidget {
       },
     );
   }
-}
 
-class _CompactMasterServiceCard extends StatelessWidget {
-  final ServiceCard card;
-  const _CompactMasterServiceCard({required this.card});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: AppTheme.compactCardWidth,
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            child: SizedBox(
-              height: AppTheme.compactImageHeight,
-              width: double.infinity,
-              child: card.mediaUrls.isNotEmpty
-                  ? Image.network(card.mediaUrls.first, fit: BoxFit.cover)
-                  : const Center(child: Icon(Icons.spa, color: Colors.white24)),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(card.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900), maxLines: 1),
-                const Gap(4),
-                Text("${card.priceStars} Stars", style: const TextStyle(color: AppTheme.primaryGold, fontSize: 11, fontWeight: FontWeight.bold)),
-                const Gap(8),
-                Row(
-                  children: [
-                    Icon(card.isActive ? Icons.visibility : Icons.visibility_off, size: 12, color: card.isActive ? Colors.green : Colors.red),
-                    const Gap(4),
-                    Text(card.isActive ? "ACTIVE" : "HIDDEN", style: TextStyle(fontSize: 9, color: card.isActive ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
   Widget _buildAddServiceSlot(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () => _showAddServiceDialog(context, ref),
@@ -336,6 +285,57 @@ class _CompactMasterServiceCard extends StatelessWidget {
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
+      ),
+    );
+  }
+}
+
+class _CompactMasterServiceCard extends StatelessWidget {
+  final ServiceCard card;
+  const _CompactMasterServiceCard({required this.card});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: AppTheme.compactCardWidth,
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            child: SizedBox(
+              height: AppTheme.compactImageHeight,
+              width: double.infinity,
+              child: card.mediaUrls.isNotEmpty
+                  ? Image.network(card.mediaUrls.first, fit: BoxFit.cover)
+                  : const Center(child: Icon(Icons.spa, color: Colors.white24)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(card.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900), maxLines: 1),
+                const Gap(4),
+                Text("${card.priceStars} Stars", style: const TextStyle(color: AppTheme.primaryGold, fontSize: 11, fontWeight: FontWeight.bold)),
+                const Gap(8),
+                Row(
+                  children: [
+                    Icon(card.isActive ? Icons.visibility : Icons.visibility_off, size: 12, color: card.isActive ? Colors.green : Colors.red),
+                    const Gap(4),
+                    Text(card.isActive ? "ACTIVE" : "HIDDEN", style: TextStyle(fontSize: 9, color: card.isActive ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
