@@ -51,5 +51,11 @@ service cloud.firestore {
       allow read: if isOwner(resource.data.userId);
       allow create: if isAuthenticated(); 
     }
+
+    // --- Wallets Collection (Explicitly requested for ownership) ---
+    match /wallets/{walletId} {
+      allow read: if isOwner(walletId) || isOwner(resource.data.userId);
+      allow write: if isOwner(walletId) || isOwner(resource.data.userId);
+    }
   }
 }

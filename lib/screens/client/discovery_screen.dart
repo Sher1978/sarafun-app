@@ -409,7 +409,7 @@ class _CompactMasterCard extends StatelessWidget {
         border: Border.all(color: AppTheme.primaryGold.withOpacity(0.1)),
       ),
       child: InkWell(
-        onTap: () => context.push('/discovery', queryParameters: {'masterId': master.uid}),
+        onTap: () => context.push(Uri(path: '/discovery', queryParameters: {'masterId': master.uid}).toString()),
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
