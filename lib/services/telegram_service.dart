@@ -1,4 +1,5 @@
 import 'package:telegram_web_app/telegram_web_app.dart';
+import 'dart:js' as js;
 
 class TelegramService {
   static final TelegramService _instance = TelegramService._internal();
@@ -43,7 +44,8 @@ class TelegramService {
   String? getRawInitData() {
     try {
       if (isSupported) {
-        return TelegramWebApp.instance.initData;
+        // Access raw string directly from JS SDK
+        return js.context['Telegram']['WebApp']['initData'];
       }
     } catch (e) {
       print("Error fetching raw Telegram init data: $e");
