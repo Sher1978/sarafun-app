@@ -127,80 +127,106 @@ async function sendPushNotification(uid: string, title: string, body: string) {
 /**
  * Authenticates a Telegram user using initData.
  * Returns a Firebase Custom Token.
+ * Uses onRequest + CORS middleware to bypass Gen1/Gen2 conflicts.
  */
-export const authenticateTelegram = functions.https.onCall(async (data, context) => {
-    const initData = data.initData;
-    if (!initData) {
-        throw new functions.https.HttpsError("invalid-argument", "Missing initData");
-    }
+import * as cors from "cors";
+const corsHandler = cors({ origin: true });
 
-    const botToken = process.env.TELEGRAM_BOT_TOKEN ||
-        process.env.TELEGRAM_TOKEN ||
-        functions.config().telegram?.token;
+export const authenticateTelegram = functions.https.onRequest((req, res) => {
+    corsHandler(req, res, async () => {
+        // 1. The "First Breath" Log (Crucial)
+        console.log("🚀 Function started! Body:", JSON.stringify(req.body));
 
-    if (!botToken) {
-        console.error("Telegram Bot Token not set in environment or config");
-        throw new functions.https.HttpsError("internal", "Server configuration error: Missing Telegram Token");
-    }
+        try {
+            // Unpack data - httpsCallable sends data in { data: ... }
+            const data = req.body.data || req.body;
 
-    // 1. Validate Telegram Hash
-    const parsedData = new URLSearchParams(initData);
-    const hash = parsedData.get("hash");
-    parsedData.delete("hash");
+            // 2. Defensive Parsing
+            if (!data || !data.initData) {
+                console.warn("❌ No initData received");
+                res.status(400).send({ error: { message: "Missing initData" } });
+                return;
+            }
 
-    // Sort keys alphabetically
-    const keys = Array.from(parsedData.keys()).sort();
-    const dataCheckString = keys
-        .map((key) => `${key}=${parsedData.get(key)}`)
-        .join("\n");
+            const initData = data.initData;
 
-    const secretKey = crypto.createHmac("sha256", "WebAppData")
-        .update(botToken)
-        .digest();
+            const botToken = process.env.TELEGRAM_BOT_TOKEN ||
+                process.env.TELEGRAM_TOKEN ||
+                functions.config().telegram?.token;
 
-    const expectedHash = crypto.createHmac("sha256", secretKey)
-        .update(dataCheckString)
-        .digest("hex");
+            if (!botToken) {
+                console.error("Telegram Bot Token not set in environment or config");
+                res.status(500).send({ error: { message: "Internal Server Configuration Error" } });
+                return;
+            }
 
-    if (hash !== expectedHash) {
-        throw new functions.https.HttpsError("unauthenticated", "Invalid Telegram hash");
-    }
+            // 1. Validate Telegram Hash
+            const parsedData = new URLSearchParams(initData);
+            const hash = parsedData.get("hash");
+            parsedData.delete("hash");
 
-    // 2. Parse User Info
-    const userJson = parsedData.get("user");
-    if (!userJson) {
-        throw new functions.https.HttpsError("invalid-argument", "User data not found in initData");
-    }
+            const keys = Array.from(parsedData.keys()).sort();
+            const dataCheckString = keys
+                .map((key) => `${key}=${parsedData.get(key)}`)
+                .join("\n");
 
-    const telegramUser = JSON.parse(userJson);
-    const telegramId = telegramUser.id.toString();
+            const secretKey = crypto.createHmac("sha256", "WebAppData")
+                .update(botToken)
+                .digest();
 
-    // 3. Create or Update User in Firestore
-    const userRef = admin.firestore().collection("users").doc(telegramId);
-    const userDoc = await userRef.get();
+            const expectedHash = crypto.createHmac("sha256", secretKey)
+                .update(dataCheckString)
+                .digest("hex");
 
-    if (!userDoc.exists) {
-        await userRef.set({
-            uid: telegramId,
-            telegramId: telegramUser.id,
-            displayName: telegramUser.first_name,
-            username: telegramUser.username || "",
-            role: "client",
-            balanceStars: 0,
-            depositBalance: 0,
-            isVip: false,
-            dealCountMonthly: 0,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-    } else {
-        // Update display name/username if changed
-        await userRef.update({
-            displayName: telegramUser.first_name,
-            username: telegramUser.username || "",
-        });
-    }
+            if (hash !== expectedHash) {
+                console.warn("❌ Invalid Telegram hash");
+                res.status(401).send({ error: { message: "Invalid Telegram hash" } });
+                return;
+            }
 
-    // 4. Create Firebase Custom Token
-    const customToken = await admin.auth().createCustomToken(telegramId);
-    return { token: customToken };
+            // 2. Parse User Info
+            const userJson = parsedData.get("user");
+            if (!userJson) {
+                console.warn("❌ User data not found in initData");
+                res.status(400).send({ error: { message: "User data not found" } });
+                return;
+            }
+
+            const telegramUser = JSON.parse(userJson);
+            const telegramId = telegramUser.id.toString();
+
+            // 3. Create or Update User
+            const userRef = admin.firestore().collection("users").doc(telegramId);
+            const userDoc = await userRef.get();
+
+            if (!userDoc.exists) {
+                await userRef.set({
+                    uid: telegramId,
+                    telegramId: telegramUser.id,
+                    displayName: telegramUser.first_name,
+                    username: telegramUser.username || "",
+                    role: "client",
+                    balanceStars: 0,
+                    depositBalance: 0,
+                    isVip: false,
+                    dealCountMonthly: 0,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            } else {
+                await userRef.update({
+                    displayName: telegramUser.first_name,
+                    username: telegramUser.username || "",
+                });
+            }
+
+            // 4. Create Token and Return JSON matching Callable protocol
+            const customToken = await admin.auth().createCustomToken(telegramId);
+            res.status(200).send({ result: { token: customToken } });
+
+        } catch (error: any) {
+            console.error("🔥 CRASH inside logic:", error);
+            res.status(500).send({ error: { message: "Logic failed", details: error.toString() } });
+        }
+    });
 });
+
