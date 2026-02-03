@@ -194,7 +194,7 @@ class _SaraFunAppState extends ConsumerState<SaraFunApp> {
     final appRouter = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Designer',
+      title: 'SaraFun',
       theme: AppTheme.darkLuxury,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
