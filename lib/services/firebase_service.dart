@@ -29,14 +29,20 @@ class FirebaseService {
   /// Sign in with Telegram using a Custom Token from Cloud Functions.
   Future<UserCredential> signInWithTelegram(String initData) async {
     try {
-      final result = await FirebaseFunctions.instance
+      final result = await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable('authenticateTelegram')
           .call({'initData': initData});
 
       final String customToken = result.data['token'];
       return await _auth.signInWithCustomToken(customToken);
+    } on FirebaseFunctionsException catch (e) {
+      print('🔥 Firebase Functions Error:');
+      print('🔥 CODE: ${e.code}');
+      print('🔥 MSG: ${e.message}');
+      print('🔥 DETAILS: ${e.details}');
+      rethrow;
     } catch (e) {
-      print("Telegram Auth Error: $e");
+      print("General Auth Error: $e");
       rethrow;
     }
   }
