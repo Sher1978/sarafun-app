@@ -495,6 +495,7 @@ class _CompactMasterCard extends StatelessWidget {
                       children: [
                         const Icon(Icons.star, color: AppTheme.primaryGold, size: 12),
                         const Gap(4),
+                        Text(
                           master.rating > 0 ? master.rating.toStringAsFixed(1) : "4.8", 
                           style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
                         ),
