@@ -23,7 +23,17 @@ jobs:
         run: flutter pub get
         
       - name: Build Web
-        run: flutter build web --release --base-href "/"
+        run: |
+          flutter build web --release --base-href "/"
+          cp CNAME build/web/CNAME
+        
+      - name: Verify Build
+        run: |
+          if [ ! -f "build/web/index.html" ]; then
+            echo "Error: build/web/index.html not found! Deployment aborted."
+            exit 1
+          fi
+          echo "Build verified: index.html exists."
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
