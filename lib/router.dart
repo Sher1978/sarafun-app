@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/screens/wallet_screen.dart';
 import 'package:sara_fun/screens/client/history_screen.dart';
+import 'package:sara_fun/screens/client/client_home_screen.dart';
 import 'package:sara_fun/screens/client/discovery_screen.dart';
 import 'package:sara_fun/screens/client/map_explorer_screen.dart';
 import 'package:sara_fun/screens/business/master_dashboard_screen.dart';
@@ -44,7 +45,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   
   return GoRouter(
-    initialLocation: '/discovery',
+    initialLocation: '/home',
     redirect: (context, state) {
       final user = authState.asData?.value;
       final isLoggedIn = user != null;
@@ -62,7 +63,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isLoggingIn || isOnboarding) {
-        return '/discovery';
+        return '/home';
       }
 
       return null;
@@ -79,22 +80,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainLayout(navigationShell: navigationShell),
         branches: [
-          // Branch 0: Discovery
+          // Branch 0: Home (Dashboard)
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/discovery',
+                path: '/home',
                 builder: (context, state) {
-                  final masterId = state.uri.queryParameters['masterId'];
-                  return DiscoveryScreen(filterMasterId: masterId);
+                  final user = authState.asData?.value;
+                  return ClientHomeScreen(user: user ?? dummyClient);
                 },
                 routes: [
                   GoRoute(
-                    path: 'detail',
+                    path: 'discovery',
                     builder: (context, state) {
-                      final service = state.extra as ServiceCard;
-                      return ServiceDetailScreen(service: service);
+                      final masterId = state.uri.queryParameters['masterId'];
+                      return DiscoveryScreen(filterMasterId: masterId);
                     },
+                    routes: [
+                      GoRoute(
+                        path: 'detail',
+                        builder: (context, state) {
+                          final service = state.extra as ServiceCard;
+                          return ServiceDetailScreen(service: service);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -109,41 +119,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Branch 2: Wallet
+          // Branch 2: Favorites
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/wallet',
-                builder: (context, state) => const WalletScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'history',
-                    builder: (context, state) {
-                      final user = authState.asData?.value;
-                      final List<Transaction>? transactions = state.extra as List<Transaction>?;
-                      return HistoryScreen(
-                        client: user ?? dummyClient,
-                        initialData: transactions,
-                      );
-                    },
-                  ),
-                ],
+                path: '/favorites',
+                builder: (context, state) => const FavoritesScreen(),
               ),
             ],
           ),
-          // Branch 3: Business (Master Only - handled by visibility in MainLayout)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/business',
-                builder: (context, state) {
-                  final user = authState.asData?.value;
-                  return MasterDashboardScreen(master: user ?? dummyMaster);
-                },
-              ),
-            ],
-          ),
-          // Branch 4: Profile
+          // Branch 3: Profile
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -155,8 +140,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/favorites',
-        builder: (context, state) => const FavoritesScreen(),
+        path: '/wallet',
+        builder: (context, state) => const WalletScreen(),
+        routes: [
+          GoRoute(
+            path: 'history',
+            builder: (context, state) {
+              final user = authState.asData?.value;
+              final List<Transaction>? transactions = state.extra as List<Transaction>?;
+              return HistoryScreen(
+                client: user ?? dummyClient,
+                initialData: transactions,
+              );
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/business',
+        builder: (context, state) {
+          final user = authState.asData?.value;
+          return MasterDashboardScreen(master: user ?? dummyMaster);
+        },
       ),
       GoRoute(
         path: '/scanner',

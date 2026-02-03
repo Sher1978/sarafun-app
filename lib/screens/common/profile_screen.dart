@@ -137,10 +137,17 @@ class ProfileScreen extends ConsumerWidget {
         _buildInfoRow("Balance", "${user.balanceStars} Stars", isGold: true),
         const Gap(16),
         _buildInfoRow(
-          "My Favorites", 
-          "VIEW ALL", 
-          icon: Icons.favorite, 
-          onTap: () => context.push('/favorites')
+          "My Wallet", 
+          "OPEN", 
+          icon: Icons.account_balance_wallet_outlined, 
+          onTap: () => context.push('/wallet')
+        ),
+        const Gap(16),
+        _buildInfoRow(
+          "Business Dashboard", 
+          "MANAGE", 
+          icon: Icons.business_center_outlined, 
+          onTap: () => context.push('/business')
         ),
       ],
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -11,25 +12,37 @@ import 'package:sara_fun/core/providers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Telegram Web App
-  final telegramService = TelegramService();
-  telegramService.init();
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    // Initialize Telegram Web App
+    final telegramService = TelegramService();
+    telegramService.init();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  // Initialize SharedPreferences
-  final prefs = await SharedPreferences.getInstance();
-  
-  runApp(ProviderScope(
-    overrides: [
-      sharedPreferencesProvider.overrideWithValue(prefs),
-    ],
-    child: const SaraFunApp(),
-  ));
+    // Initialize SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Global Error Handling for Flutter Framework Errors
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      print("🔴 Flutter Error: ${details.exception}");
+      print("🔴 Stack: ${details.stack}");
+    };
+    
+    runApp(ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const SaraFunApp(),
+    ));
+  }, (error, stack) {
+    print("🔴 Uncaught Async Error: $error");
+    print(stack);
+  });
 }
 
 class SaraFunApp extends ConsumerStatefulWidget {
@@ -181,7 +194,7 @@ class _SaraFunAppState extends ConsumerState<SaraFunApp> {
     final appRouter = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'SaraFun',
+      title: 'Designer',
       theme: AppTheme.darkLuxury,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,

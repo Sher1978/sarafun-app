@@ -80,8 +80,15 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> with SingleTi
             .toList();
 
         if (favoriteCards.isEmpty) {
-          return const Center(
-            child: Text("No favorite services yet.", style: TextStyle(color: Colors.white24)),
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.favorite_border, size: 48, color: Colors.white.withOpacity(0.1)),
+                const Gap(16),
+                const Text("No favorite services saved", style: TextStyle(color: Colors.white54, fontSize: 14)),
+              ],
+            ),
           );
         }
 
@@ -123,8 +130,15 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> with SingleTi
             .toList();
 
         if (favoriteMasters.isEmpty) {
-          return const Center(
-            child: Text("No favorite masters yet.", style: TextStyle(color: Colors.white24)),
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.favorite_border, size: 48, color: Colors.white.withOpacity(0.1)),
+                const Gap(16),
+                const Text("No favorite masters yet", style: TextStyle(color: Colors.white54, fontSize: 14)),
+              ],
+            ),
           );
         }
 

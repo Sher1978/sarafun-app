@@ -18,31 +18,38 @@ class FirebaseService {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
 
+  /// Sign in with Telegram using a Custom Token from Cloud Functions.
   Future<UserCredential> signInWithCustomToken(String token) async {
     return await _auth.signInWithCustomToken(token);
   }
 
-  Future<void> signOut() async {
-    await _auth.signOut();
-  }
-
-  /// Sign in with Telegram using a Custom Token from Cloud Functions.
   Future<UserCredential> signInWithTelegram(String initData) async {
     try {
+      if (kIsWeb) {
+        print("Attempting Telegram Auth on WEB...");
+      }
+      
       final result = await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable('authenticateTelegram')
           .call({'initData': initData});
 
+      if (result.data == null || result.data['token'] == null) {
+        throw Exception("Invalid response from authenticateTelegram Cloud Function");
+      }
+
       final String customToken = result.data['token'];
       return await _auth.signInWithCustomToken(customToken);
     } on FirebaseFunctionsException catch (e) {
-      print('🔥 Firebase Functions Error:');
-      print('🔥 CODE: ${e.code}');
-      print('🔥 MSG: ${e.message}');
-      print('🔥 DETAILS: ${e.details}');
+      print('🔥 Firebase Functions Error during Telegram Auth:');
+      print('🔥 Code: ${e.code}');
+      print('🔥 Message: ${e.message}');
+      print('🔥 Details: ${e.details}');
+      rethrow;
+    } on FirebaseAuthException catch (e) {
+      print('🔥 Firebase Auth Error: ${e.code} - ${e.message}');
       rethrow;
     } catch (e) {
-      print("General Auth Error: $e");
+      print("🔥 General Auth Error: $e");
       rethrow;
     }
   }
@@ -375,19 +382,34 @@ class FirebaseService {
 
   Future<void> toggleFavorite(String uid, String itemId, bool isService) async {
     final userRef = _firestore.collection('users').doc(uid);
-    final doc = await userRef.get();
-    if (!doc.exists) return;
-
-    final user = AppUser.fromMap(doc.data()!);
     final field = isService ? 'favoriteServices' : 'favoriteMasters';
-    final List<String> currentList = List<String>.from(doc.data()![field] ?? []);
+    
+    // Use arrayUnion and arrayRemove for atomic operations
+    // This requires checking the current state first, or passing 'isFavorite' explicitly.
+    // Since we are toggling, we check first.
+    
+    try {
+      final doc = await userRef.get();
+      if (!doc.exists) return;
 
-    if (currentList.contains(itemId)) {
-      currentList.remove(itemId);
-    } else {
-      currentList.add(itemId);
+      final List<dynamic> currentList = doc.data()?[field] ?? [];
+      final bool exists = currentList.contains(itemId);
+
+      if (exists) {
+        await userRef.update({
+          field: FieldValue.arrayRemove([itemId])
+        });
+      } else {
+        await userRef.update({
+          field: FieldValue.arrayUnion([itemId])
+        });
+      }
+    } catch (e) {
+      print("Error toggling favorite: $e");
+      // Fallback for document missing field
+      await userRef.set({
+        field: FieldValue.arrayUnion([itemId])
+      }, SetOptions(merge: true));
     }
-
-    await userRef.update({field: currentList});
   }
 }

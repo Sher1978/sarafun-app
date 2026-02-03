@@ -23,9 +23,6 @@ class MainLayout extends ConsumerWidget {
     // Navigation bar indices must map to these branches correctly.
     
     int currentIndex = navigationShell.currentIndex;
-    if (!isMaster && currentIndex == 4) {
-      currentIndex = 3; // Shift Profile index if Business is hidden
-    }
 
     return Scaffold(
       backgroundColor: AppTheme.deepBlack,
@@ -44,9 +41,9 @@ class MainLayout extends ConsumerWidget {
           onTap: (index) => _onTap(context, index, isMaster),
           items: [
             const BottomNavigationBarItem(
-              icon: Icon(Icons.explore_outlined),
-              activeIcon: Icon(Icons.explore),
-              label: 'Discovery',
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Home',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.map_outlined),
@@ -54,16 +51,10 @@ class MainLayout extends ConsumerWidget {
               label: 'Map',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              activeIcon: Icon(Icons.account_balance_wallet),
-              label: 'Wallet',
+              icon: Icon(Icons.favorite_outline),
+              activeIcon: Icon(Icons.favorite),
+              label: 'Favorites',
             ),
-            if (isMaster)
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.business_center_outlined),
-                activeIcon: Icon(Icons.business_center),
-                label: 'Business',
-              ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person),
@@ -78,14 +69,9 @@ class MainLayout extends ConsumerWidget {
   }
 
   void _onTap(BuildContext context, int index, bool isMaster) {
-    int branchIndex = index;
-    if (!isMaster && index == 3) {
-      branchIndex = 4; // Map Profile tab back to Branch 4
-    }
-    
     navigationShell.goBranch(
-      branchIndex,
-      initialLocation: branchIndex == navigationShell.currentIndex,
+      index,
+      initialLocation: index == navigationShell.currentIndex,
     );
   }
 }

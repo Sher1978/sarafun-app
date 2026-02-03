@@ -78,22 +78,38 @@ class TelegramService {
         startParam = TelegramWebApp.instance.initDataUnsafe?.startParam;
       } else {
         // MOCK for browser testing
-        startParam = Uri.base.queryParameters['tg_start'];
+        final uri = Uri.base;
+        startParam = uri.queryParameters['tg_start_param'] ?? uri.queryParameters['startapp'];
       }
 
-      if (startParam != null && startParam.startsWith('ref_')) {
-        final parts = startParam.split('_');
-        // Expected parts: [ref, MASTERID, USERID] OR [ref, USERID]
+      if (startParam != null && (startParam.startsWith('ref_') || startParam.startsWith('master_'))) {
+        // Handle various formats:
+        // 1. ref_MASTERID_USERID
+        // 2. ref_USERID (just referrer)
+        // 3. master_MASTERID (direct master link)
         
-        if (parts.length == 3) {
-          return DeepLinkData(
-            masterId: parts[1].isEmpty ? null : parts[1],
-            referrerId: parts[2].isEmpty ? null : parts[2],
-          );
-        } else if (parts.length == 2) {
-          return DeepLinkData(
-            referrerId: parts[1].isEmpty ? null : parts[1],
-          );
+        final parts = startParam.split('_');
+        
+        if (startParam.startsWith('ref_')) {
+          if (parts.length >= 3) {
+             // ref_MASTERID_REFERRERID
+             return DeepLinkData(
+               masterId: parts[1].isEmpty ? null : parts[1],
+               referrerId: parts[2].isEmpty ? null : parts[2],
+             );
+          } else if (parts.length == 2) {
+            // ref_REFERRERID
+            return DeepLinkData(
+              referrerId: parts[1].isEmpty ? null : parts[1],
+            );
+          }
+        } else if (startParam.startsWith('master_')) {
+           // master_MASTERID
+           if (parts.length >= 2) {
+             return DeepLinkData(
+               masterId: parts[1].isEmpty ? null : parts[1],
+             );
+           }
         }
       }
     } catch (e) {

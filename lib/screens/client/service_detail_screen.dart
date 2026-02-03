@@ -35,8 +35,30 @@ class ServiceDetailScreen extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("${service.priceStars} Stars", 
-                              style: const TextStyle(color: AppTheme.primaryGold, fontSize: 24, fontWeight: FontWeight.bold)),
+                          Row(
+                            children: [
+                              Text("${service.priceStars} Stars", 
+                                  style: const TextStyle(color: AppTheme.primaryGold, fontSize: 24, fontWeight: FontWeight.bold)),
+                              const Gap(16),
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final user = ref.watch(currentUserProvider).asData?.value;
+                                  final isFav = user?.favoriteServices.contains(service.id) ?? false;
+                                  return IconButton(
+                                    icon: Icon(
+                                      isFav ? Icons.favorite : Icons.favorite_border,
+                                      color: isFav ? AppTheme.primaryGold : Colors.white70,
+                                    ),
+                                    onPressed: () {
+                                      if (user != null && service.id != null) {
+                                        ref.read(firebaseServiceProvider).toggleFavorite(user.uid, service.id!, true);
+                                      }
+                                    },
+                                  );
+                                }
+                              ),
+                            ],
+                          ),
                           
                           // Service-to-Parent Link
                           FutureBuilder<AppUser?>(

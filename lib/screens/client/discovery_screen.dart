@@ -331,7 +331,7 @@ class _CompactServiceCard extends StatelessWidget {
                           ),
                           child: Icon(
                             isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: isFavorite ? Colors.red : AppTheme.primaryGold,
+                            color: isFavorite ? AppTheme.primaryGold : Colors.white70,
                             size: 14,
                           ),
                         ),
@@ -466,7 +466,7 @@ class _CompactMasterCard extends StatelessWidget {
                   ),
                   child: Icon(
                     isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: isFavorite ? Colors.red : AppTheme.primaryGold,
+                    color: isFavorite ? AppTheme.primaryGold : Colors.white70,
                     size: 14,
                   ),
                 ),

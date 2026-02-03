@@ -19,12 +19,16 @@ class ClientHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
+      backgroundColor: AppTheme.deepBlack,
       appBar: AppBar(
-        title: const Text('SARAFUN', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
+        title: const Text('SHERLOCK', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 4, fontSize: 18, color: AppTheme.primaryGold)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.history, size: 20),
-            onPressed: () => context.go('/client/history'),
+            icon: const Icon(Icons.notifications_outlined, color: Colors.white70),
+            onPressed: () {},
           ),
         ],
       ),
@@ -34,147 +38,237 @@ class ClientHomeScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildStatusCard(context),
-            const Gap(24),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.go('/discovery'),
-                    icon: const Icon(Icons.search, size: 18),
-                    label: const Text("SERVICES"),
-                  ),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.push('/map'),
-                    icon: const Icon(Icons.map_outlined, size: 18, color: AppTheme.primaryGold),
-                    label: const Text("MAP", style: TextStyle(color: AppTheme.primaryGold, fontSize: 13, fontWeight: FontWeight.w900)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppTheme.primaryGold),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Gap(40),
-            Center(
-              child: _buildQrCode(context),
-            ),
-            const Gap(24),
+            const Gap(32),
             const Text(
-              'SHOW QR TO COLLECT REWARDS',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white24, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1),
+              "OUR ECOSYSTEM",
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const Gap(16),
+            _buildBusinessCard(
+              context,
+              title: "SARAFUN",
+              subtitle: "Global Services & Elite Masters",
+              icon: Icons.spa_outlined,
+              imagePath: "assets/images/sarafun_bg.jpg", // Placeholder logic
+              gradient: const LinearGradient(
+                colors: [Color(0xFF333333), Color(0xFF000000)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              onTap: () => context.go('/home/discovery'),
+              isPrimary: true,
+            ),
+            const Gap(16),
+            _buildBusinessCard(
+              context,
+              title: "SHERLOCK CARS",
+              subtitle: "Premium Car Rental & Leasing",
+              icon: Icons.directions_car_filled_outlined,
+              gradient: LinearGradient(
+                colors: [const Color(0xFF1E2a38), Colors.black],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              onTap: () => _showComingSoon(context),
+            ),
+            const Gap(16),
+            _buildBusinessCard(
+              context,
+              title: "AUTO-SERVICE",
+              subtitle: "On-Demand Mechanics & Tyres",
+              icon: Icons.build_circle_outlined,
+              gradient: LinearGradient(
+                colors: [const Color(0xFF2d241c), Colors.black],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              onTap: () => _showComingSoon(context),
             ),
             const Gap(40),
-            // Master Onboarding Promotion
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.03),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppTheme.primaryGold.withOpacity(0.1)),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    "WANT TO EARN AS A PARTNER?",
-                    style: TextStyle(
-                      color: AppTheme.primaryGold,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const Gap(8),
-                  const Text(
-                    "Join our worldwide elite network and start profiting globally.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                  const Gap(16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => context.push('/master-onboarding'),
-                      child: const Text("LAUNCH MY BUSINESS"),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // _buildQrCode(context), // Moved to Profile
           ],
         ),
       ),
     );
   }
 
-  Future<void> _switchRole(WidgetRef ref) async {
-    final firebaseService = ref.read(firebaseServiceProvider);
-    
-    // Switch to master role
-    final updatedUser = user.copyWith(role: UserRole.master);
-    await firebaseService.saveUser(updatedUser);
-    
-    // Update provider to trigger UI update / redirect
-    ref.read(currentUserProvider.notifier).state = AsyncValue.data(updatedUser);
+  Widget _buildBusinessCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Gradient gradient,
+    required VoidCallback onTap,
+    String? imagePath,
+    bool isPrimary = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 140,
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isPrimary ? AppTheme.primaryGold.withOpacity(0.3) : Colors.white.withOpacity(0.05),
+            width: isPrimary ? 1.5 : 1,
+          ),
+          boxShadow: isPrimary
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryGold.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  )
+                ]
+              : [],
+        ),
+        child: Stack(
+          children: [
+            // Background Pattern/Icon
+            Positioned(
+              right: -20,
+              bottom: -20,
+              child: Icon(
+                icon,
+                size: 120,
+                color: Colors.white.withOpacity(0.03),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isPrimary ? AppTheme.primaryGold : Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: isPrimary ? Colors.black : Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isPrimary ? AppTheme.primaryGold : Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isPrimary)
+              Positioned(
+                top: 24,
+                right: 24,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryGold.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppTheme.primaryGold.withOpacity(0.3)),
+                  ),
+                  child: const Text(
+                    "LIVE",
+                    style: TextStyle(color: AppTheme.primaryGold, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppTheme.cardColor,
+        content: const Text("Coming Soon to Dubai", style: TextStyle(color: Colors.white)),
+        action: SnackBarAction(label: "Dismiss", onPressed: () {}, textColor: AppTheme.primaryGold),
+      ),
+    );
   }
 
   Widget _buildStatusCard(BuildContext context) {
     final bool isVip = user.isVip;
     final color = isVip ? AppTheme.primaryGold : Colors.white;
-    final statusText = isVip ? "VIP CLIENT" : "BASE CLIENT";
-    final cashbackText = isVip ? "10% Cashback" : "5% Cashback";
-
+    final statusText = isVip ? "VIP MEMBER" : "BASE MEMBER";
+    
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: color.withOpacity(0.1)),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Text(statusText,
-              style: TextStyle(
-                  color: color, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 2)),
-          const Gap(4),
-          Text("${user.dealCountMonthly}/10 deals this month", style: const TextStyle(color: Colors.white54, fontSize: 12)),
-          const Gap(16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "WELCOME BACK,",
+                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+                ),
+                const Gap(4),
+                Text(
+                  user.displayName?.toUpperCase() ?? "SHER",
+                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const Gap(12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: color.withOpacity(0.2)),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
-            child: Text(cashbackText, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "${user.balanceStars}",
+                style: TextStyle(color: AppTheme.primaryGold, fontSize: 28, fontWeight: FontWeight.w900, fontFamily: 'Inter'),
+              ),
+              const Text(
+                "STARS",
+                style: TextStyle(color: AppTheme.primaryGold, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildQrCode(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryGold.withOpacity(0.1),
-            blurRadius: 20,
-          ),
-        ],
-      ),
-      child: QrImageView(
-        data: user.uid,
-        version: QrVersions.auto,
-        size: 180.0,
-        backgroundColor: Colors.white,
       ),
     );
   }
