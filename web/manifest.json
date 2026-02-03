@@ -1,11 +1,11 @@
 {
-    "name": "sara_fun",
-    "short_name": "sara_fun",
+    "name": "SaraFun",
+    "short_name": "SaraFun",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "SaraFun - Exclusive Loyalty App",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
