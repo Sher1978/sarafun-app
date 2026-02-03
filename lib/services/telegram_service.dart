@@ -1,5 +1,6 @@
 import 'package:telegram_web_app/telegram_web_app.dart';
-import 'dart:js' as js;
+import 'dart:js_util' as js_util;
+import 'dart:js_interop'; // Keep for types if needed, or remove if strictly util
 
 class TelegramService {
   static final TelegramService _instance = TelegramService._internal();
@@ -44,8 +45,11 @@ class TelegramService {
   String? getRawInitData() {
     try {
       if (isSupported) {
-        // Access raw string directly from JS SDK
-        return js.context['Telegram']['WebApp']['initData'];
+        // Access raw string using js_util (dynamic access)
+        final win = js_util.globalThis;
+        final telegram = js_util.getProperty(win, 'Telegram');
+        final webApp = js_util.getProperty(telegram, 'WebApp');
+        return js_util.getProperty(webApp, 'initData');
       }
     } catch (e) {
       print("Error fetching raw Telegram init data: $e");
