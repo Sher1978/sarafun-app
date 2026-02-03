@@ -16,7 +16,7 @@ class MainLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserProvider);
-    final user = userAsync.valueOrNull;
+    final user = userAsync.asData?.value;
     final isMaster = user?.role == UserRole.master;
 
     // Branches: 0:Discovery, 1:Map, 2:Wallet, 3:Business, 4:Profile
