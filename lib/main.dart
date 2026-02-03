@@ -78,7 +78,7 @@ class _SaraFunAppState extends ConsumerState<SaraFunApp> {
         // Capture Deep Link Data
         final deepLink = tgService.getDeepLinkData();
         if (deepLink != null) {
-          ref.read(deepLinkDataProvider.notifier).state = deepLink;
+          ref.read(deepLinkDataProvider.notifier).setData(deepLink);
         }
 
         // We are in Telegram (or Mock)! Sync user.
@@ -108,7 +108,7 @@ class _SaraFunAppState extends ConsumerState<SaraFunApp> {
         final updatedUser = await firebaseService.checkAndRefreshVipStatus(appUser);
         
         // 4. Update Provider
-        ref.read(currentUserProvider.notifier).state = AsyncValue.data(updatedUser);
+        ref.read(currentUserProvider.notifier).setUser(updatedUser);
 
         // 4. Handle Deep Link Navigation
         if (deepLink != null && deepLink.masterId != null) {

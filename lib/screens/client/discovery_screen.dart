@@ -270,6 +270,7 @@ class _CompactServiceCard extends StatelessWidget {
   final double height;
   final bool isFavorite;
   final Position? userPosition;
+  final VoidCallback onFavoriteToggle;
 
   const _CompactServiceCard({
     required this.card, 
@@ -426,6 +427,7 @@ class _CompactMasterCard extends StatelessWidget {
   final double height;
   final bool isFavorite;
   final Position? userPosition;
+  final VoidCallback onFavoriteToggle;
 
   const _CompactMasterCard({
     required this.master, 

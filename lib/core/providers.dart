@@ -28,22 +28,38 @@ final authStateProvider = StreamProvider<User?>((ref) {
 // Current AppUser Provider (Reads from Firestore based on Auth User)
 // Current AppUser Provider (Mutable StateProvider)
 // This allows us to manually set the user when logging in via Telegram
-final currentUserProvider = StateProvider<AsyncValue<AppUser?>>((ref) {
-  // Default behavior: Listen to Auth Changes
-  final authState = ref.watch(authStateProvider);
-  
-  return authState.when(
-    data: (user) {
-      if (user == null) return const AsyncValue.data(null);
-      return const AsyncValue.loading();
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
+// Current AppUser Provider (Managed by Notifier)
+class CurrentUserNotifier extends Notifier<AsyncValue<AppUser?>> {
+  @override
+  AsyncValue<AppUser?> build() {
+    final authState = ref.watch(authStateProvider);
+    return authState.when(
+      data: (user) {
+        if (user == null) return const AsyncValue.data(null);
+        return const AsyncValue.loading();
+      },
+      loading: () => const AsyncValue.loading(),
+      error: (e, st) => AsyncValue.error(e, st),
+    );
+  }
+
+  void setUser(AppUser? user) {
+    state = AsyncValue.data(user);
+  }
+}
+
+final currentUserProvider = NotifierProvider<CurrentUserNotifier, AsyncValue<AppUser?>>(CurrentUserNotifier.new);
 
 // Deep Link Data Provider
-final deepLinkDataProvider = StateProvider<DeepLinkData?>((ref) => null);
+// Deep Link Data Provider
+class DeepLinkDataNotifier extends Notifier<DeepLinkData?> {
+  @override
+  DeepLinkData? build() => null;
+
+  void setData(DeepLinkData? data) => state = data;
+}
+
+final deepLinkDataProvider = NotifierProvider<DeepLinkDataNotifier, DeepLinkData?>(DeepLinkDataNotifier.new);
 
 // Transactions Provider
 final userTransactionsProvider = StreamProvider<List<Transaction>>((ref) {
