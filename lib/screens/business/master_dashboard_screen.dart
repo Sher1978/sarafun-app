@@ -60,7 +60,7 @@ class MasterDashboardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildBalanceCard(context),
+            _buildBalanceCard(context, ref),
             const Gap(32),
             _buildSectionHeader("MY SERVICES"),
             const Gap(16),
@@ -125,23 +125,119 @@ class MasterDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.primaryGold.withOpacity(0.1)),
-      ),
-      child: Column(
-        children: [
-          const Text("DEPOSIT BALANCE", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
-          const Gap(8),
-          Text("${master.depositBalance} Stars", style: const TextStyle(color: AppTheme.primaryGold, fontSize: 24, fontWeight: FontWeight.w900)),
-          const Gap(16),
-          const Text("Status: Active & Visible", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
-        ],
-      ),
+  Widget _buildBalanceCard(BuildContext context, WidgetRef ref) {
+    // 1. We need the services to calculate the threshold (Max Price * 0.2)
+    final firebaseService = ref.read(firebaseServiceProvider);
+    
+    return StreamBuilder<List<ServiceCard>>(
+      stream: firebaseService.getServiceCardsStream(master.uid),
+      builder: (context, snapshot) {
+        final cards = snapshot.data ?? [];
+        
+        // Calculate Threshold
+        double maxPrice = 0;
+        if (cards.isNotEmpty) {
+           maxPrice = cards
+               .where((c) => c.isActive)
+               .map((c) => c.priceStars.toDouble())
+               .fold(0, (prev, curr) => curr > prev ? curr : prev);
+        }
+        final threshold = maxPrice * 0.2;
+        final isLowBalance = master.depositBalance < threshold;
+
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            // Dynamic Background
+            gradient: isLowBalance 
+              ? const LinearGradient(
+                  colors: [Color(0xFF8B0000), Color(0xFF300000)], // Deep Red Warning
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : const LinearGradient(
+                  colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)], // Standard Dark Luxury
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isLowBalance ? Colors.redAccent : AppTheme.primaryGold.withOpacity(0.1),
+              width: isLowBalance ? 1.5 : 1.0,
+            ),
+            boxShadow: isLowBalance 
+              ? [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 12, spreadRadius: 2)]
+              : [],
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("DEPOSIT BALANCE", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  if (isLowBalance)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(8)),
+                      child: const Text("OFFLINE", style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.w900)),
+                    ),
+                ],
+              ),
+              const Gap(8),
+              Text("${master.depositBalance} Stars", style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
+              const Gap(4),
+               Text(
+                "Threshold: ${threshold.toStringAsFixed(1)} Stars", 
+                style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10)
+              ),
+              const Gap(16),
+              
+              if (isLowBalance) ...[
+                const Divider(color: Colors.white24),
+                const Gap(8),
+                const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                    Gap(8),
+                    Expanded(
+                      child: Text(
+                        "LOW BALANCE. SERVICES HIDDEN.",
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const Gap(12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Mock Top Up or Navigation
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Top Up feature coming soon via Telegram Payments!")));
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.red[900],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text("TOP UP NOW", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ] else ...[
+                 const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 14),
+                    Gap(6),
+                    Text("active & visible", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
