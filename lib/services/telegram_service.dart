@@ -1,6 +1,6 @@
 import 'package:telegram_web_app/telegram_web_app.dart';
-import 'dart:js_util' as js_util;
-import 'dart:js_interop'; // Keep for types if needed, or remove if strictly util
+// import 'dart:js_util' as js_util; // Removed to fix non-web analysis/build
+// import 'dart:js_interop'; 
 
 class TelegramService {
   static final TelegramService _instance = TelegramService._internal();
@@ -15,7 +15,13 @@ class TelegramService {
     try {
       if (isSupported) {
         TelegramWebApp.instance.expand();
-        TelegramWebApp.instance.ready();
+        try {
+           // ready() might not be available in all versions or called differently?
+           // The package 0.3.3 has ready()
+           TelegramWebApp.instance.ready();
+        } catch (e) {
+           print("Telegram ready() warning: $e");
+        }
       }
     } catch (e) {
       print("Telegram Init Error: $e");
@@ -45,11 +51,8 @@ class TelegramService {
   String? getRawInitData() {
     try {
       if (isSupported) {
-        // Access raw string using js_util (dynamic access)
-        final win = js_util.globalThis;
-        final telegram = js_util.getProperty(win, 'Telegram');
-        final webApp = js_util.getProperty(telegram, 'WebApp');
-        return js_util.getProperty(webApp, 'initData');
+        // Direct access via package (version 0.3.3+)
+        return TelegramWebApp.instance.initData.toString(); 
       }
     } catch (e) {
       print("Error fetching raw Telegram init data: $e");

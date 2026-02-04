@@ -1,3 +1,4 @@
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -188,7 +189,7 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
 
   Widget _buildPremiumGlassCard(AppUser master) {
     return Animate(
-      effects: const [FadeEffect(), SlideEffect(begin: Offset(0, 0.2), end: Offset(0, 0), curve: Curves.easeOutCubic, duration: Duration(milliseconds: 400))],
+      effects: [FadeEffect(), SlideEffect(begin: Offset(0, 0.2), end: Offset(0, 0), curve: Curves.easeOutCubic, duration: Duration(milliseconds: 400))],
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -212,10 +213,10 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
               child: CircleAvatar(
                 radius: 26,
                 backgroundColor: Colors.black,
-                backgroundImage: (master.photoUrl != null && master.photoUrl!.isNotEmpty) 
-                   ? NetworkImage(master.photoUrl!) 
+                backgroundImage: (master.photoURL != null && master.photoURL!.isNotEmpty) 
+                   ? NetworkImage(master.photoURL!) 
                    : null,
-                child: (master.photoUrl == null || master.photoUrl!.isEmpty)
+                child: (master.photoURL == null || master.photoURL!.isEmpty)
                    ? Text(master.displayName?.substring(0, 1) ?? "U", style: const TextStyle(color: AppTheme.primaryGold))
                    : null,
               ),
