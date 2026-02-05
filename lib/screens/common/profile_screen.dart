@@ -89,22 +89,57 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildActionButton(BuildContext context, AppUser user) {
     final isMaster = user.role == UserRole.master;
     
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-          onPressed: () async {
-          if (isMaster) {
-            context.go('/business');
-          } else {
-            context.push('/master-onboarding');
-          }
-        },
-        // ...
-        child: Text(
-          isMaster ? 'OPEN DASHBOARD' : 'LAUNCH MY BUSINESS',
-          style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+              onPressed: () async {
+              if (isMaster) {
+                context.go('/business');
+              } else {
+                context.push('/master-onboarding');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGold,
+              foregroundColor: Colors.black,
+            ),
+            child: Text(
+              isMaster ? 'OPEN DASHBOARD' : 'LAUNCH MY BUSINESS',
+              style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
+            ),
+          ),
         ),
-      ),
+        const Gap(16),
+        // Persistent Scanner Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              if (isMaster) {
+                context.push('/scanner');
+              } else {
+                 context.push('/master-onboarding'); // Logic: Client scanner leads to business info
+              }
+            },
+            icon: Icon(Icons.qr_code_scanner, color: isMaster ? AppTheme.primaryGold : Colors.white70),
+            label: Text(
+              isMaster ? 'SCAN CLIENT QR' : 'BECOME A MASTER',
+              style: TextStyle(
+                fontWeight: FontWeight.bold, 
+                letterSpacing: 1,
+                color: isMaster ? AppTheme.primaryGold : Colors.white70,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isMaster ? Colors.black : Colors.grey[800],
+              side: isMaster ? BorderSide(color: AppTheme.primaryGold.withOpacity(0.5)) : BorderSide.none,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

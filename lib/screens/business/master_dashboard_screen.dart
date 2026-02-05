@@ -43,9 +43,10 @@ class MasterDashboardScreen extends ConsumerWidget {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: const BackButton(color: AppTheme.primaryGold),
         actions: [
           IconButton(
-            icon: const Icon(Icons.location_on, size: 20),
+            icon: const Icon(Icons.location_on, size: 20, color: Colors.white70),
             onPressed: () => _openLocationPicker(context, ref),
           ),
         ],
@@ -58,22 +59,12 @@ class MasterDashboardScreen extends ConsumerWidget {
             _buildBalanceCard(context, ref),
             _buildAnalyticsCards(context, ref),
             const Gap(32),
-            _buildSectionHeader("MY SERVICES"),
-            const Gap(16),
-            _buildServiceList(ref),
-            const Gap(32),
             _buildSectionHeader("BUSINESS TOOLS"),
             const Gap(16),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                _buildCompactToolButton(
-                  context,
-                  icon: Icons.qr_code_scanner,
-                  label: "SCANNER",
-                  onPressed: () => context.push('/scanner'),
-                ),
                 _buildCompactToolButton(
                   context,
                   icon: Icons.add_circle_outline,
@@ -94,6 +85,11 @@ class MasterDashboardScreen extends ConsumerWidget {
                 ),
               ],
             ),
+            const Gap(32),
+            _buildSectionHeader("MY SERVICES"),
+            const Gap(16),
+            _buildServiceList(ref),
+            const Gap(32),
           ],
         ),
       ),
