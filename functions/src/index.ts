@@ -143,21 +143,26 @@ export const authenticateTelegram = functions.https.onCall(async (data, context)
             throw new functions.https.HttpsError("invalid-argument", "Missing initData");
         }
 
-        const initData = data.initData;
-
-        const botToken = process.env.TELEGRAM_BOT_TOKEN ||
-            process.env.TELEGRAM_TOKEN ||
-            functions.config().telegram?.token;
-
-        if (!botToken) {
-            console.error("Telegram Bot Token not set");
-            throw new functions.https.HttpsError("internal", "Server configuration error");
+        // 2b. URL Decode if necessary (Client might send encoded string)
+        if (initData.includes("%")) {
+            try {
+                initData = decodeURIComponent(initData);
+                console.log("decoded initData:", initData);
+            } catch (e) {
+                console.warn("Failed to decodeURIComponent initData", e);
+            }
         }
 
         // 3. Validate Telegram Hash
         const parsedData = new URLSearchParams(initData);
         const hash = parsedData.get("hash");
         parsedData.delete("hash");
+
+        // Remove 'signature' if present (new Telegram format artifact)
+        if (parsedData.has("signature")) {
+            parsedData.delete("signature");
+            console.log("Removed signature from check string");
+        }
 
         const keys = Array.from(parsedData.keys()).sort();
         const dataCheckString = keys
