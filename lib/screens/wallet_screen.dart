@@ -21,8 +21,8 @@ class WalletScreen extends ConsumerWidget {
       backgroundColor: AppTheme.deepBlack,
       appBar: AppBar(
         title: const Text(
-          'Wallet',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          'WALLET',
+          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16, color: AppTheme.primaryGold),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -140,8 +140,8 @@ class WalletScreen extends ConsumerWidget {
                 onTap: () {
                   context.push('/wallet/history', extra: transactions);
                 },
-                child: Row(
-                  children: const [
+                child: const Row(
+                  children: [
                     Text("VIEW HISTORY", style: TextStyle(color: AppTheme.primaryGold, fontSize: 10, fontWeight: FontWeight.bold)),
                     Gap(4),
                     Icon(Icons.arrow_forward_ios, color: AppTheme.primaryGold, size: 8),
@@ -176,9 +176,9 @@ class WalletScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +208,7 @@ class WalletScreen extends ConsumerWidget {
           Text(
             'TOTAL STARS',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.2,
@@ -239,9 +239,9 @@ class WalletScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
-                  color: (isVip ? AppTheme.primaryGold : Colors.white).withOpacity(0.1),
+                  color: (isVip ? AppTheme.primaryGold : Colors.white).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: (isVip ? AppTheme.primaryGold : Colors.white).withOpacity(0.3)),
+                  border: Border.all(color: (isVip ? AppTheme.primaryGold : Colors.white).withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   'Status: ${isVip ? "VIP Elite" : "Base Member"}',
@@ -257,9 +257,9 @@ class WalletScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: const Text(
                     'Partner Program Active',
@@ -293,7 +293,7 @@ class WalletScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.primaryGold.withOpacity(0.1),
+              color: AppTheme.primaryGold.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -319,7 +319,7 @@ class WalletScreen extends ConsumerWidget {
                 Text(
                   dateStr,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
+                    color: Colors.white.withValues(alpha: 0.4),
                     fontSize: 12,
                   ),
                 ),

@@ -57,7 +57,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (user != null) {
       final updatedUser = user.copyWith(onboardingComplete: true);
       await ref.read(firebaseServiceProvider).saveUser(updatedUser);
-      ref.read(currentUserProvider.notifier).state = AsyncValue.data(updatedUser);
     }
     
     if (mounted) {
@@ -79,7 +78,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: AppTheme.primaryGold.withOpacity(0.05),
+                color: AppTheme.primaryGold.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
             ),
@@ -200,8 +199,8 @@ class OnboardingPage extends StatelessWidget {
             padding: const EdgeInsets.all(40),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppTheme.primaryGold.withOpacity(0.05),
-              border: Border.all(color: AppTheme.primaryGold.withOpacity(0.1)),
+              color: AppTheme.primaryGold.withValues(alpha: 0.05),
+              border: Border.all(color: AppTheme.primaryGold.withValues(alpha: 0.1)),
             ),
             child: Icon(
               data.icon,

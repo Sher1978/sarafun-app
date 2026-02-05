@@ -8,6 +8,7 @@ class Deal extends Equatable {
   final String masterId;
   final String serviceId;
   final num amountStars;
+  final num commissionTotal;
   final Map<String, dynamic> commissionDistribution;
   final int rating;
   final DealStatus status;
@@ -19,12 +20,13 @@ class Deal extends Equatable {
     required this.masterId,
     required this.serviceId,
     required this.amountStars,
+    required this.commissionTotal,
     required this.commissionDistribution,
     this.rating = 0,
     this.status = DealStatus.pending,
     required this.createdAt,
   });
-// ... (props update)
+
   @override
   List<Object?> get props => [
         id,
@@ -32,6 +34,7 @@ class Deal extends Equatable {
         masterId,
         serviceId,
         amountStars,
+        commissionTotal,
         commissionDistribution,
         rating,
         status,
@@ -45,6 +48,7 @@ class Deal extends Equatable {
       'masterId': masterId,
       'serviceId': serviceId,
       'amountStars': amountStars,
+      'commissionTotal': commissionTotal,
       'commissionDistribution': commissionDistribution,
       'rating': rating,
       'status': status.name,
@@ -59,6 +63,7 @@ class Deal extends Equatable {
       masterId: map['masterId'] as String,
       serviceId: map['serviceId'] as String? ?? '',
       amountStars: (map['amountStars'] as num? ?? 0),
+      commissionTotal: (map['commissionTotal'] as num? ?? 0),
       commissionDistribution: Map<String, dynamic>.from(map['commissionDistribution'] ?? {}),
       rating: map['rating'] as int? ?? 0,
       status: DealStatus.values.firstWhere(

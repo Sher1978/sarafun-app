@@ -8,6 +8,7 @@ import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/models/service_card_model.dart';
 import 'package:sara_fun/models/review_model.dart';
 import 'package:sara_fun/screens/client/create_review_screen.dart';
+import 'package:sara_fun/models/lead_model.dart';
 
 class ServiceDetailScreen extends ConsumerWidget {
   final ServiceCard service;
@@ -19,7 +20,12 @@ class ServiceDetailScreen extends ConsumerWidget {
     final firebaseService = ref.watch(firebaseServiceProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(service.title)),
+      appBar: AppBar(
+        title: Text(service.title.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16, color: AppTheme.primaryGold)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -104,13 +110,32 @@ class ServiceDetailScreen extends ConsumerWidget {
                           return SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () {
-                                context.push('/client/confirm-deal', extra: {
-                                  'serviceTitle': service.title,
-                                  'masterName': masterName,
-                                  'masterId': service.masterId,
-                                  'amountStars': service.priceStars,
-                                });
+                              onPressed: () async {
+                                final user = ref.read(currentUserProvider).asData?.value;
+                                if (user != null && service.id != null) {
+                                  // 1. Create Lead
+                                  final lead = Lead(
+                                    id: DateTime.now().millisecondsSinceEpoch.toString(), // Simple ID
+                                    clientId: user.uid,
+                                    masterId: service.masterId,
+                                    serviceId: service.id!,
+                                    createdAt: DateTime.now(),
+                                    status: LeadStatus.open,
+                                  );
+                                  
+                                  // 2. Save to Firestore
+                                  await firebaseService.createLead(lead);
+                                }
+
+                                if (context.mounted) {
+                                  context.push('/confirm-deal', extra: {
+                                    'serviceTitle': service.title,
+                                    'masterName': masterName,
+                                    'masterId': service.masterId,
+                                    'amountStars': service.priceStars,
+                                    'serviceId': service.id,
+                                  });
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 20),

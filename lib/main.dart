@@ -10,6 +10,7 @@ import 'package:sara_fun/services/telegram_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sara_fun/core/providers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sara_fun/core/notification_manager.dart';
 
 void main() async {
   runZonedGuarded(() async {
@@ -117,12 +118,8 @@ class _SaraFunAppState extends ConsumerState<SaraFunApp> {
           referrerId: deepLink?.referrerId,
         );
 
-        // 3. Architecture Requirement: Automatic VIP status check
-        final updatedUser = await firebaseService.checkAndRefreshVipStatus(appUser);
+        await firebaseService.checkAndRefreshVipStatus(appUser);
         
-        // 4. Update Provider
-        ref.read(currentUserProvider.notifier).setUser(updatedUser);
-
         // 4. Handle Deep Link Navigation
         if (deepLink != null && deepLink.masterId != null) {
           final appRouter = ref.read(routerProvider);
@@ -164,18 +161,18 @@ class _SaraFunAppState extends ConsumerState<SaraFunApp> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(Icons.wifi_off, size: 64, color: AppTheme.errorRed),
-                Gap(16),
+                const Gap(16),
                 const Text(
                   "Connection Error",
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
-                Gap(8),
+                const Gap(8),
                 Text(
                   _errorMessage!,
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white70),
                 ),
-                Gap(32),
+                const Gap(32),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -193,10 +190,12 @@ class _SaraFunAppState extends ConsumerState<SaraFunApp> {
     // Watch the router provider to react to auth state changes
     final appRouter = ref.watch(routerProvider);
 
+
     return MaterialApp.router(
       title: 'SaraFun',
       theme: AppTheme.darkLuxury,
       routerConfig: appRouter,
+      builder: (context, child) => NotificationManager(child: child ?? const SizedBox()),
       debugShowCheckedModeBanner: false,
     );
   }

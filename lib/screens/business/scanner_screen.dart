@@ -156,6 +156,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         masterId: master.uid,
         serviceId: 'manual_scan',
         amountStars: amount,
+        commissionTotal: amount * 0.20,
         commissionDistribution: distribution.toMap(),
         createdAt: DateTime.now(),
       );
@@ -182,7 +183,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Scan Client")),
+      appBar: AppBar(title: const Text("SCAN CLIENT")),
       body: Column(
         children: [
           Expanded(

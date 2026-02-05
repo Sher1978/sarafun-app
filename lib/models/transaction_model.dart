@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum TransactionType { referralBonus, cashback, payment, withdrawal, directBonus, openerBonus }
+enum TransactionType { referralBonus, cashback, payment, withdrawal, directBonus, openerBonus, topup }
 
 class Transaction extends Equatable {
   final String id;

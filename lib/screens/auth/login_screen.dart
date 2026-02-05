@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
 import 'package:sara_fun/core/providers.dart';
 import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/models/service_card_model.dart';
-import 'package:sara_fun/services/firebase_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -58,8 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           await firebaseService.createServiceCard(demoService);
       }
       
-      // Update State
-      ref.read(currentUserProvider.notifier).state = AsyncValue.data(user);
+      // Update State (automatic via StreamProvider watching Auth & Firestore)
       
       // Router will redirect automatically based on auth state
     } catch (e) {

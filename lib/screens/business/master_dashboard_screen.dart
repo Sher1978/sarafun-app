@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
 import 'package:sara_fun/screens/business/master_location_picker.dart';
 import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/models/service_card_model.dart';
-import 'package:sara_fun/services/firebase_service.dart';
 import 'package:sara_fun/core/providers.dart';
 
 class MasterDashboardScreen extends ConsumerWidget {
@@ -31,12 +29,6 @@ class MasterDashboardScreen extends ConsumerWidget {
               lng: location.longitude,
               isMapVisible: true,
             );
-            final updatedUser = master.copyWith(
-              latitude: location.latitude,
-              longitude: location.longitude,
-              isMapVisible: true,
-            );
-            ref.read(currentUserProvider.notifier).state = AsyncValue.data(updatedUser);
           },
         ),
       ),
@@ -47,7 +39,10 @@ class MasterDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('BUSINESS PANEL', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
+        title: const Text('BUSINESS PANEL', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16, color: AppTheme.primaryGold)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.location_on, size: 20),
@@ -61,6 +56,7 @@ class MasterDashboardScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildBalanceCard(context, ref),
+            _buildAnalyticsCards(context, ref),
             const Gap(32),
             _buildSectionHeader("MY SERVICES"),
             const Gap(16),
@@ -90,6 +86,12 @@ class MasterDashboardScreen extends ConsumerWidget {
                   label: "HISTORY",
                   onPressed: () => context.push('/business/history'),
                 ),
+                _buildCompactToolButton(
+                  context,
+                  icon: Icons.contacts,
+                  label: "LEADS",
+                  onPressed: () => context.go('/business/leads'),
+                ),
               ],
             ),
           ],
@@ -106,6 +108,145 @@ class MasterDashboardScreen extends ConsumerWidget {
         fontSize: 12,
         fontWeight: FontWeight.w900,
         letterSpacing: 2,
+      ),
+    );
+  }
+
+  Widget _buildServiceList(WidgetRef ref) {
+    final firebaseService = ref.read(firebaseServiceProvider);
+    
+    return StreamBuilder<List<ServiceCard>>(
+      stream: firebaseService.getServiceCardsStream(master.uid),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        
+        final cards = snapshot.data!;
+        
+        // 2x5 Grid = 10 slots fixed
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.85,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: 10,
+          itemBuilder: (context, index) {
+            if (index < cards.length) {
+              return _buildServiceTile(context, ref, cards[index]);
+            } else {
+              return _buildEmptyServiceTile(context, ref);
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildServiceTile(BuildContext context, WidgetRef ref, ServiceCard card) {
+    return GestureDetector(
+      onTap: () {
+        // Edit Service
+        // context.push('/business/service/${card.id}');
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Edit Service Coming Soon")));
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          image: card.mediaUrls.isNotEmpty 
+            ? DecorationImage(
+                image: NetworkImage(card.mediaUrls.first), 
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken),
+              )
+            : null,
+        ),
+        child: Stack(
+          children: [
+            if (card.mediaUrls.isEmpty)
+              const Center(child: Icon(Icons.spa, color: Colors.white24, size: 40)),
+            
+            Positioned(
+              bottom: 12,
+              left: 12,
+              right: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    card.title, 
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Gap(4),
+                  Text(
+                    "${card.priceStars} Stars", 
+                    style: const TextStyle(color: AppTheme.primaryGold, fontSize: 11, fontWeight: FontWeight.bold)
+                  ),
+                ],
+              ),
+            ),
+             Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(card.isActive ? Icons.circle : Icons.circle_outlined, size: 8, color: card.isActive ? Colors.green : Colors.grey),
+                    const Gap(4),
+                    Text(card.isActive ? "ON" : "OFF", style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyServiceTile(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => _showAddServiceDialog(context, ref),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05), style: BorderStyle.solid), // Dashed would be better but solid is fine
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGold.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add, color: AppTheme.primaryGold, size: 24),
+            ),
+            const Gap(12),
+            Text(
+              "Add Service",
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -162,11 +303,11 @@ class MasterDashboardScreen extends ConsumerWidget {
                 ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isLowBalance ? Colors.redAccent : AppTheme.primaryGold.withOpacity(0.1),
+              color: isLowBalance ? Colors.redAccent : AppTheme.primaryGold.withValues(alpha: 0.1),
               width: isLowBalance ? 1.5 : 1.0,
             ),
             boxShadow: isLowBalance 
-              ? [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 12, spreadRadius: 2)]
+              ? [BoxShadow(color: Colors.red.withValues(alpha: 0.3), blurRadius: 12, spreadRadius: 2)]
               : [],
           ),
           child: Column(
@@ -188,7 +329,7 @@ class MasterDashboardScreen extends ConsumerWidget {
               const Gap(4),
                Text(
                 "Threshold: ${threshold.toStringAsFixed(1)} Stars", 
-                style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10)
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 10)
               ),
               const Gap(16),
               
@@ -241,66 +382,68 @@ class MasterDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildServiceList(WidgetRef ref) {
+
+
+
+  Widget _buildAnalyticsCards(BuildContext context, WidgetRef ref) {
     final firebaseService = ref.read(firebaseServiceProvider);
-    return StreamBuilder<List<ServiceCard>>(
-      stream: firebaseService.getServiceCardsStream(master.uid),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        final cards = snapshot.data!;
-
-        if (cards.isEmpty) {
-          return const Center(child: Text("No services created yet.", style: TextStyle(color: Colors.white24)));
-        }
-
-        return SizedBox(
-          height: AppTheme.compactCardHeight + 10,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: cards.length,
-            separatorBuilder: (_, __) => const Gap(16),
-            itemBuilder: (context, index) {
-              return _CompactMasterServiceCard(card: cards[index]);
-            },
-          ),
-        );
-      },
+    
+    return Column(
+      children: [
+        const Gap(32), // Spacing from Balance Card
+        Row(
+           children: [
+             Expanded(
+               child: StreamBuilder<int>(
+                 stream: firebaseService.getProfileViews(master.uid),
+                 builder: (context, snapshot) => _buildStatCard("PROFILE VIEWS", "${snapshot.data ?? 0}", Icons.visibility, Colors.purpleAccent),
+               ),
+             ),
+             const Gap(12),
+             Expanded(
+               child: StreamBuilder<int>(
+                 stream: firebaseService.getLeadsCount(master.uid),
+                 builder: (context, snapshot) => _buildStatCard("TOTAL LEADS", "${snapshot.data ?? 0}", Icons.person_add, Colors.blueAccent),
+               ),
+             ),
+           ],
+        ),
+        const Gap(12),
+        Row(
+           children: [
+             Expanded(
+               child: _buildStatCard("CONVERSION RATE", "0.0%", Icons.trending_up, Colors.greenAccent), // TODO: Calculate
+             ),
+             const Gap(12),
+             Expanded(
+               child: StreamBuilder<num>(
+                 stream: firebaseService.getMonthlyEarnings(master.uid),
+                 builder: (context, snapshot) => _buildStatCard("MONTHLY EARNINGS", "${snapshot.data?.toStringAsFixed(0) ?? 0} Stars", Icons.monetization_on, AppTheme.primaryGold),
+               ),
+             ),
+           ],
+        ),
+      ],
     );
   }
 
-  Widget _buildAddServiceSlot(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
-      onTap: () => _showAddServiceDialog(context, ref),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.02),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            style: BorderStyle.none, // Can use custom painter for dashed border
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: CustomPaint(
-            painter: _DashedBorderPainter(),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add_rounded, color: Colors.white.withOpacity(0.3), size: 24),
-                const Gap(8),
-                Text(
-                  'Add Service',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.3),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const Gap(12),
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          const Gap(4),
+          Text(title, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        ],
       ),
     );
   }
@@ -342,7 +485,7 @@ class MasterDashboardScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Cancel", style: TextStyle(color: Colors.white.withOpacity(0.6))),
+            child: Text("Cancel", style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -375,7 +518,7 @@ class MasterDashboardScreen extends ConsumerWidget {
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
       filled: true,
       fillColor: Colors.black26,
       border: OutlineInputBorder(
@@ -397,7 +540,7 @@ class _CompactMasterServiceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,34 +580,4 @@ class _CompactMasterServiceCard extends StatelessWidget {
   }
 }
 
-class _DashedBorderPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.12)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
 
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        const Radius.circular(20),
-      ));
-
-    var pathMetric = path.computeMetrics().first;
-    double dashWidth = 8.0;
-    double dashSpace = 6.0;
-    double distance = 0.0;
-
-    while (distance < pathMetric.length) {
-      canvas.drawPath(
-        pathMetric.extractPath(distance, distance + dashWidth),
-        paint,
-      );
-      distance += dashWidth + dashSpace;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

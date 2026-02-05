@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/screens/wallet_screen.dart';
 import 'package:sara_fun/screens/client/history_screen.dart';
-import 'package:sara_fun/screens/client/client_home_screen.dart';
+
 import 'package:sara_fun/screens/client/discovery_screen.dart';
 import 'package:sara_fun/screens/client/map_explorer_screen.dart';
 import 'package:sara_fun/screens/business/master_dashboard_screen.dart';
@@ -14,12 +14,17 @@ import 'package:sara_fun/models/transaction_model.dart';
 import 'package:sara_fun/screens/onboarding_screen.dart';
 import 'package:sara_fun/screens/common/profile_screen.dart';
 import 'package:sara_fun/screens/business/master_onboarding_screen.dart';
+import 'package:sara_fun/screens/admin/admin_dashboard_screen.dart';
+import 'package:sara_fun/screens/common/settings_screen.dart';
 import 'package:sara_fun/screens/common/main_layout.dart';
 import 'package:sara_fun/screens/client/service_detail_screen.dart';
+import 'package:sara_fun/screens/client/search_screen.dart';
 import 'package:sara_fun/screens/client/favorites_screen.dart';
 import 'package:sara_fun/models/service_card_model.dart';
 import 'package:sara_fun/core/providers.dart';
-import 'package:flutter/material.dart';
+import 'package:sara_fun/screens/common/chat_list_screen.dart';
+import 'package:sara_fun/screens/common/chat_screen.dart';
+import 'package:sara_fun/screens/business/leads_screen.dart';
 
 // Dummy user for MVP demo
 const dummyClient = AppUser(
@@ -45,7 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/discovery',
     redirect: (context, state) {
       final user = authState.asData?.value;
       final isLoggedIn = user != null;
@@ -57,13 +62,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      if (!user.onboardingComplete) {
+      if (user != null && !user.onboardingComplete) {
         if (isOnboarding) return null;
         return '/onboarding';
       }
 
       if (isLoggingIn || isOnboarding) {
-        return '/home';
+        return '/discovery';
+      }
+
+      if (user.role != UserRole.admin && state.matchedLocation.startsWith('/admin')) {
+        return '/discovery';
       }
 
       return null;
@@ -80,31 +89,26 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainLayout(navigationShell: navigationShell),
         branches: [
-          // Branch 0: Home (Dashboard)
+          // Branch 0: Discovery
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/home',
+                path: '/discovery',
                 builder: (context, state) {
-                  final user = authState.asData?.value;
-                  return ClientHomeScreen(user: user ?? dummyClient);
+                  final masterId = state.uri.queryParameters['masterId'];
+                  return DiscoveryScreen(filterMasterId: masterId);
                 },
                 routes: [
                   GoRoute(
-                    path: 'discovery',
+                    path: 'search',
+                    builder: (context, state) => const SearchScreen(),
+                  ),
+                  GoRoute(
+                    path: 'detail',
                     builder: (context, state) {
-                      final masterId = state.uri.queryParameters['masterId'];
-                      return DiscoveryScreen(filterMasterId: masterId);
+                      final service = state.extra as ServiceCard;
+                      return ServiceDetailScreen(service: service);
                     },
-                    routes: [
-                      GoRoute(
-                        path: 'detail',
-                        builder: (context, state) {
-                          final service = state.extra as ServiceCard;
-                          return ServiceDetailScreen(service: service);
-                        },
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -119,7 +123,29 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Branch 2: Favorites
+          // Branch 2: Wallet
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/wallet',
+                builder: (context, state) => const WalletScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'history',
+                    builder: (context, state) {
+                      final user = authState.asData?.value;
+                      final List<Transaction>? transactions = state.extra as List<Transaction>?;
+                      return HistoryScreen(
+                        client: user ?? dummyClient,
+                        initialData: transactions,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Branch 3: Favorites
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -128,7 +154,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Branch 3: Profile
+          // Branch 4: Profile
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -140,28 +166,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/wallet',
-        builder: (context, state) => const WalletScreen(),
-        routes: [
-          GoRoute(
-            path: 'history',
-            builder: (context, state) {
-              final user = authState.asData?.value;
-              final List<Transaction>? transactions = state.extra as List<Transaction>?;
-              return HistoryScreen(
-                client: user ?? dummyClient,
-                initialData: transactions,
-              );
-            },
-          ),
-        ],
-      ),
-      GoRoute(
         path: '/business',
         builder: (context, state) {
           final user = authState.asData?.value;
           return MasterDashboardScreen(master: user ?? dummyMaster);
         },
+        routes: [
+           GoRoute(
+            path: 'leads',
+            builder: (context, state) => const LeadsScreen(),
+          ),
+           GoRoute(
+            path: 'history',
+            builder: (context, state) => const WalletScreen(), // Reusing generic history for now or create specific? 
+            // Wait, WalletScreen is for client? 
+            // Better to make a placeholder or reuse HistoryScreen if possible.
+          ),
+        ],
       ),
       GoRoute(
         path: '/scanner',
@@ -183,6 +204,27 @@ final routerProvider = Provider<GoRouter>((ref) {
             amountStars: extras['amountStars'] ?? 0,
           );
         },
+      ),
+      GoRoute(
+        path: '/chats',
+        builder: (context, state) => const ChatListScreen(),
+        routes: [
+           GoRoute(
+            path: ':roomId',
+            builder: (context, state) {
+              final roomId = state.pathParameters['roomId']!;
+              return ChatScreen(roomId: roomId);
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminDashboardScreen(),
       ),
     ],
   );

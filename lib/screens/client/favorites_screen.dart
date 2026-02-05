@@ -6,7 +6,7 @@ import 'package:sara_fun/core/theme/app_theme.dart';
 import 'package:sara_fun/core/providers.dart';
 import 'package:sara_fun/models/service_card_model.dart';
 import 'package:sara_fun/models/user_model.dart';
-import 'package:sara_fun/screens/client/discovery_screen.dart'; // Reuse components if possible, or create common ones
+// Reuse components if possible, or create common ones
 
 class FavoritesScreen extends ConsumerStatefulWidget {
   const FavoritesScreen({super.key});
@@ -84,7 +84,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> with SingleTi
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.favorite_border, size: 48, color: Colors.white.withOpacity(0.1)),
+                Icon(Icons.favorite_border, size: 48, color: Colors.white.withValues(alpha: 0.1)),
                 const Gap(16),
                 const Text("No favorite services saved", style: TextStyle(color: Colors.white54, fontSize: 14)),
               ],
@@ -134,7 +134,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> with SingleTi
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.favorite_border, size: 48, color: Colors.white.withOpacity(0.1)),
+                Icon(Icons.favorite_border, size: 48, color: Colors.white.withValues(alpha: 0.1)),
                 const Gap(16),
                 const Text("No favorite masters yet", style: TextStyle(color: Colors.white54, fontSize: 14)),
               ],
@@ -187,7 +187,7 @@ class _FavoriteGridItem extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.cardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,11 +199,11 @@ class _FavoriteGridItem extends StatelessWidget {
                 child: imageUrl != null 
                   ? Image.network(imageUrl!, fit: BoxFit.cover, width: double.infinity)
                   : Container(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       child: Center(
                         child: Icon(
                           isService ? Icons.spa : Icons.person,
-                          color: AppTheme.primaryGold.withOpacity(0.2),
+                          color: AppTheme.primaryGold.withValues(alpha: 0.2),
                           size: 40,
                         ),
                       ),

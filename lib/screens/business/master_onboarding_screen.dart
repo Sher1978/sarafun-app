@@ -27,13 +27,7 @@ class _BecomeMasterOnboardingScreenState extends ConsumerState<BecomeMasterOnboa
       final firebaseService = ref.read(firebaseServiceProvider);
       await firebaseService.upgradeToMaster(user.uid);
       
-      // Refresh local state
-      final updatedUser = user.copyWith(
-        role: UserRole.master, 
-        isVisible: true,
-        isMapVisible: false,
-      );
-      ref.read(currentUserProvider.notifier).state = AsyncValue.data(updatedUser);
+      // Refresh local state (automatic via StreamProvider)
       
       if (mounted) {
         context.go('/business');
@@ -64,7 +58,7 @@ class _BecomeMasterOnboardingScreenState extends ConsumerState<BecomeMasterOnboa
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.primaryGold.withOpacity(0.05),
+                color: AppTheme.primaryGold.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -168,7 +162,7 @@ class _BecomeMasterOnboardingScreenState extends ConsumerState<BecomeMasterOnboa
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: AppTheme.primaryGold, size: 24),

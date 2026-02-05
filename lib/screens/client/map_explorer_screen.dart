@@ -112,7 +112,7 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
         flexibleSpace: Container(
            decoration: BoxDecoration(
              gradient: LinearGradient(
-               colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+               colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
                begin: Alignment.topCenter,
                end: Alignment.bottomCenter
              )
@@ -149,19 +149,21 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
                 return Container(color: AppTheme.deepBlack, child: const Center(child: CircularProgressIndicator(color: AppTheme.primaryGold)));
               }
 
-              return GoogleMap(
-                initialCameraPosition: CameraPosition(target: _initialPosition, zoom: _initialZoom),
-                onMapCreated: (controller) {
-                  _mapController = controller;
-                  _mapController?.setMapStyle(_darkMapStyle);
-                },
-                markers: markers,
-                onTap: _onMapTapped,
-                myLocationEnabled: true,
-                myLocationButtonEnabled: false, // Custom button below
-                zoomControlsEnabled: false,
-                mapToolbarEnabled: false,
-                padding: const EdgeInsets.only(bottom: 200), // Push Google Logo up
+              return Positioned.fill(
+                child: GoogleMap(
+                  style: _darkMapStyle,
+                  initialCameraPosition: CameraPosition(target: _initialPosition, zoom: _initialZoom),
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                  },
+                  markers: markers,
+                  onTap: _onMapTapped,
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false, // Custom button below
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
+                  padding: const EdgeInsets.only(bottom: 200), // Push Google Logo up
+                ),
               );
             },
           ),
@@ -189,16 +191,16 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
 
   Widget _buildPremiumGlassCard(AppUser master) {
     return Animate(
-      effects: [FadeEffect(), SlideEffect(begin: Offset(0, 0.2), end: Offset(0, 0), curve: Curves.easeOutCubic, duration: Duration(milliseconds: 400))],
+      effects: [const FadeEffect(), const SlideEffect(begin: Offset(0, 0.2), end: Offset(0, 0), curve: Curves.easeOutCubic, duration: Duration(milliseconds: 400))],
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.85), // Semi-transparent black
+          color: Colors.black.withValues(alpha: 0.85), // Semi-transparent black
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppTheme.primaryGold, width: 1.5), // Gold Border
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryGold.withOpacity(0.15),
+              color: AppTheme.primaryGold.withValues(alpha: 0.15),
               blurRadius: 20,
               spreadRadius: 2,
             )
@@ -283,7 +285,7 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryGold : Colors.white.withOpacity(0.05),
+                color: isSelected ? AppTheme.primaryGold : Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected ? AppTheme.primaryGold : Colors.white12,

@@ -72,6 +72,7 @@ class _ConfirmDealScreenState extends ConsumerState<ConfirmDealScreen> {
         masterId: widget.masterId,
         serviceId: widget.serviceId,
         amountStars: widget.amountStars,
+        commissionTotal: distribution.toMap().values.fold(0, (previous, current) => previous + (current as num)),
         commissionDistribution: distribution.toMap(),
         rating: _rating,
         status: DealStatus.completed,
@@ -148,7 +149,7 @@ class _ConfirmDealScreenState extends ConsumerState<ConfirmDealScreen> {
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: AppTheme.primaryGold.withOpacity(0.05),
+                color: AppTheme.primaryGold.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
             ),
@@ -178,9 +179,9 @@ class _ConfirmDealScreenState extends ConsumerState<ConfirmDealScreen> {
         child: Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             children: [
@@ -254,7 +255,7 @@ class _ConfirmDealScreenState extends ConsumerState<ConfirmDealScreen> {
       decoration: BoxDecoration(
         boxShadow: isEnabled ? [
           BoxShadow(
-            color: AppTheme.primaryGold.withOpacity(0.3),
+            color: AppTheme.primaryGold.withValues(alpha: 0.3),
             blurRadius: 20,
             spreadRadius: 2,
           )

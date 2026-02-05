@@ -1,4 +1,5 @@
 import 'package:telegram_web_app/telegram_web_app.dart';
+import '../core/logger.dart';
 // import 'dart:js_util' as js_util; // Removed to fix non-web analysis/build
 // import 'dart:js_interop'; 
 
@@ -10,6 +11,8 @@ class TelegramService {
   /// Returns true if running inside Telegram Web App
   bool get isSupported => TelegramWebApp.instance.isSupported;
 
+
+
   /// Initialize the Web App (expand to full screen)
   void init() {
     try {
@@ -20,17 +23,17 @@ class TelegramService {
            // The package 0.3.3 has ready()
            TelegramWebApp.instance.ready();
         } catch (e) {
-           print("Telegram ready() warning: $e");
+           Logger.error("Telegram ready() warning: $e", name: 'TelegramService');
         }
       }
     } catch (e) {
-      print("Telegram Init Error: $e");
+      Logger.error("Telegram Init Error: $e", name: 'TelegramService');
     }
   }
 
   /// Share a referral link via Telegram
   void shareReferral({required String referrerId, required String masterId}) {
-    final String botUsername = "SaraFunBot"; // Placeholder
+    const String botUsername = "SaraFunBot"; // Placeholder
     final String link = "https://t.me/$botUsername/app?startapp=ref_${referrerId}_master_$masterId";
     final String text = Uri.encodeComponent("Check out this master on SaraFun! Get 5% cashback and join the elite loyalty network in Dubai.");
     final String shareUrl = "https://t.me/share/url?url=${Uri.encodeComponent(link)}&text=$text";
@@ -40,10 +43,10 @@ class TelegramService {
         TelegramWebApp.instance.openTelegramLink(shareUrl);
       } else {
         // Fallback for browser testing
-        print("Telegram Share Triggered: $shareUrl");
+        Logger.log("Telegram Share Triggered: $shareUrl", name: 'TelegramService');
       }
     } catch (e) {
-      print("Telegram Share Error: $e");
+      Logger.error("Telegram Share Error: $e", name: 'TelegramService');
     }
   }
 
@@ -55,7 +58,7 @@ class TelegramService {
         return TelegramWebApp.instance.initData.toString(); 
       }
     } catch (e) {
-      print("Error fetching raw Telegram init data: $e");
+      Logger.error("Error fetching raw Telegram init data: $e", name: 'TelegramService');
     }
     return null;
   }
@@ -67,7 +70,7 @@ class TelegramService {
         return TelegramWebApp.instance.initDataUnsafe?.user;
       }
     } catch (e) {
-      print("Error fetching Telegram user: $e");
+      Logger.error("Error fetching Telegram user: $e", name: 'TelegramService');
     }
     return null;
   }
@@ -116,7 +119,7 @@ class TelegramService {
         }
       }
     } catch (e) {
-      print("Error parsing deep link: $e");
+      Logger.error("Error parsing deep link: $e", name: 'TelegramService');
     }
     return null;
   }
@@ -128,3 +131,4 @@ class DeepLinkData {
 
   DeepLinkData({this.masterId, this.referrerId});
 }
+

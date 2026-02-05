@@ -31,6 +31,18 @@ class ReferralDistribution {
     this.businessOpenerId,
   });
 
+  factory ReferralDistribution.empty() {
+    return ReferralDistribution(
+      clientReward: 0,
+      recommenderReward: 0,
+      openerReward: 0,
+      l1Reward: 0,
+      l2Reward: 0,
+      l3Reward: 0,
+      platformRevenue: 0,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'client': clientReward,
@@ -57,28 +69,66 @@ class ReferralEngine {
     AppUser master, {
     String? businessRecommenderIdOverride,
   }) {
-    final num totalCommission = amount * 0.20;
-    num remainingCommission = totalCommission;
+    final num totalCommission = amount * 0.20; // 20% Hard Cap
+    num remainingCommission = totalCommission; // Platform gets what's left
 
+    // 1. Client Cashback (5% or 10% for VIP)
     final int clientPercentage = client.isVip ? 10 : 5;
     final num clientReward = (amount * clientPercentage) / 100;
     remainingCommission -= clientReward;
 
+    // 2. Business Partners (2% each)
     final num recommenderReward = (amount * 2) / 100;
     final num openerReward = (amount * 2) / 100;
-    remainingCommission -= (recommenderReward + openerReward);
+    
+    // Only deduct if IDs exist (logic handled in distribution object, but math assumes max potential deduction for safety, or we check existence?)
+    // To match 'safety' we calculate potential, but let's check nulls for accuracy in 'platformRevenue'
+    
+    num deductedPartners = 0;
+    if (businessRecommenderIdOverride != null || (master.businessRecommenderId?.isNotEmpty ?? false)) {
+       deductedPartners += recommenderReward;
+    }
+    if (master.businessOpenerId?.isNotEmpty ?? false) {
+       deductedPartners += openerReward;
+    }
+    remainingCommission -= deductedPartners;
 
-    final num l1Reward = amount / 100;
-    final num l2Reward = amount / 100;
-    final num l3Reward = amount / 100;
-    remainingCommission -= (l1Reward + l2Reward + l3Reward);
+    // 3. Referral Path (1% each for L1, L2, L3)
+    final num l1Val = amount * 0.01;
+    final num l2Val = amount * 0.01;
+    final num l3Val = amount * 0.01;
+    
+    final l1Id = _getReferrerAt(client, 0);
+    final l2Id = _getReferrerAt(client, 1);
+    final l3Id = _getReferrerAt(client, 2);
+
+    final l1Reward = l1Id != null ? l1Val : 0;
+    final l2Reward = l2Id != null ? l2Val : 0;
+    final l3Reward = l3Id != null ? l3Val : 0;
+
+    remainingCommission -= l1Reward;
+    remainingCommission -= l2Reward;
+    remainingCommission -= l3Reward;
 
     final num platformRevenue = remainingCommission;
-
+    
+    // Also fix Recommender/Opener rewards in the return object? 
+    // The previous logic calculated 'deductedPartners' but `recommenderReward` var was constant.
+    // I should fix that too for consistency, but `recommenderReward` variable is used in `deductedPartners` calc above.
+    // I will just return the CONDITIONAL rewards in the object.
+    
+    final String? recId = businessRecommenderIdOverride ?? master.businessRecommenderId;
+    final String? opId = master.businessOpenerId;
+    
+    // We need to pass the conditionally zeroed rewards to constructor.
+    // But constructor takes `recommenderReward`.
+    // Let's recalculate them for the return object based on existence.
+    
     return ReferralDistribution(
       clientReward: clientReward,
-      recommenderReward: recommenderReward,
-      openerReward: openerReward,
+      recommenderReward: (recId != null && recId.isNotEmpty) ? recommenderReward : 0,
+      openerReward: (opId != null && opId.isNotEmpty) ? openerReward : 0,
+
       l1Reward: l1Reward,
       l2Reward: l2Reward,
       l3Reward: l3Reward,

@@ -3,12 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:sara_fun/core/logger.dart';
 import 'package:sara_fun/models/review_model.dart';
 import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/models/deal_model.dart';
 import 'package:sara_fun/models/service_card_model.dart';
 import 'package:sara_fun/models/transaction_model.dart';
 import 'package:sara_fun/services/referral_engine.dart';
+
+import 'package:sara_fun/models/lead_model.dart';
 
 class FirebaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -26,7 +29,7 @@ class FirebaseService {
   Future<UserCredential> signInWithTelegram(String initData) async {
     try {
       if (kIsWeb) {
-        print("Attempting Telegram Auth on WEB...");
+        Logger.log("Attempting Telegram Auth on WEB...", name: 'FirebaseService');
       }
       
       final result = await FirebaseFunctions.instanceFor(region: 'us-central1')
@@ -40,16 +43,16 @@ class FirebaseService {
       final String customToken = result.data['token'];
       return await _auth.signInWithCustomToken(customToken);
     } on FirebaseFunctionsException catch (e) {
-      print('🔥 Firebase Functions Error during Telegram Auth:');
-      print('🔥 Code: ${e.code}');
-      print('🔥 Message: ${e.message}');
-      print('🔥 Details: ${e.details}');
+      Logger.error('🔥 Firebase Functions Error during Telegram Auth:', name: 'FirebaseService');
+      Logger.error('🔥 Code: ${e.code}', name: 'FirebaseService');
+      Logger.error('🔥 Message: ${e.message}', name: 'FirebaseService');
+      Logger.error('🔥 Details: ${e.details}', name: 'FirebaseService');
       rethrow;
     } on FirebaseAuthException catch (e) {
-      print('🔥 Firebase Auth Error: ${e.code} - ${e.message}');
+      Logger.error('🔥 Firebase Auth Error: ${e.code} - ${e.message}', name: 'FirebaseService');
       rethrow;
     } catch (e) {
-      print("🔥 General Auth Error: $e");
+      Logger.error("🔥 General Auth Error: $e", name: 'FirebaseService');
       rethrow;
     }
   }
@@ -102,6 +105,14 @@ class FirebaseService {
       return AppUser.fromMap(doc.data()!);
     }
     return null;
+  }
+
+  Stream<AppUser?> getUserStream(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .map((doc) => doc.exists && doc.data() != null ? AppUser.fromMap(doc.data()!) : null);
   }
 
 
@@ -293,7 +304,7 @@ class FirebaseService {
       await ref.putData(fileBytes);
       return await ref.getDownloadURL();
     } catch (e) {
-      print("Upload Error: $e");
+      Logger.error("Upload Error: $e", name: 'FirebaseService');
       return null;
     }
   }
@@ -339,6 +350,7 @@ class FirebaseService {
     return _firestore
         .collection('users')
         .where('role', isEqualTo: UserRole.master.name)
+        .where('isVisible', isEqualTo: true)
         .where('isMapVisible', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
@@ -405,11 +417,112 @@ class FirebaseService {
         });
       }
     } catch (e) {
-      print("Error toggling favorite: $e");
+      Logger.error("Error toggling favorite: $e", name: 'FirebaseService');
       // Fallback for document missing field
       await userRef.set({
         field: FieldValue.arrayUnion([itemId])
       }, SetOptions(merge: true));
     }
   }
+
+
+  // --- Analytics ---
+  
+  /// Get total views for a user's profile/services (Mocked for now as we don't track views yet)
+  Stream<int> getProfileViews(String uid) {
+    // Return a mock stream that emits a static value or slowly increments
+    // Ideally, this would be a real collection 'analytics_views' count
+    return Stream.value(142); 
+  }
+
+  /// Get total leads count for a master
+  Stream<int> getLeadsCount(String masterId) {
+    return _firestore
+        .collection('leads')
+        .where('masterId', isEqualTo: masterId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  /// Get total earnings (sum of deposits/payments received?) 
+  /// Or rather "Monthly Earnings" from transactions of type 'payment' (which are DEDUCTIONS for commission)?
+  /// Wait, Master Earnings = Deal Amount - Commission. 
+  /// Since we don't store "Earnings" transaction for Master (only deduction), 
+  /// we calculate it from Deals where status=completed.
+  Stream<num> getMonthlyEarnings(String masterId) {
+    final startOfMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    
+    return _firestore
+        .collection('deals')
+        .where('masterId', isEqualTo: masterId)
+        .where('status', isEqualTo: DealStatus.completed.name)
+        .where('createdAt', isGreaterThanOrEqualTo: startOfMonth.toIso8601String())
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.fold<num>(0, (total, doc) {
+        final data = doc.data();
+        final amount = (data['amountStars'] as num? ?? 0);
+        // Master keeps 80% (approx, assuming 20% commission)
+        // Or strictly: amount - commissionTotal
+        final commission = (data['commissionTotal'] as num? ?? 0);
+        return total + (amount - commission); 
+      });
+    });
+  }
+
+  Stream<List<Lead>> getLeadsStream(String masterId) {
+    return _firestore
+        .collection('leads')
+        .where('masterId', isEqualTo: masterId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Lead.fromMap(doc.data())).toList();
+    });
+  }
+
+  Future<void> createLead(Lead lead) async {
+    await _firestore.collection('leads').doc(lead.id).set(lead.toMap());
+  }
+
+  // --- Search ---
+
+  /// Search for services by title or description
+  Future<List<ServiceCard>> searchServices(String query) async {
+    if (query.isEmpty) return [];
+    
+    // Simple case-insensitive search for MVP
+    // For production, use Algolia/Typesense/Firebase Extensions
+    final snapshot = await _firestore.collection('service_cards')
+        .where('is_active', isEqualTo: true)
+        .get();
+        
+    final lowerQuery = query.toLowerCase();
+    return snapshot.docs
+        .map((doc) => ServiceCard.fromMap(doc.data(), doc.id))
+        .where((card) => 
+            card.title.toLowerCase().contains(lowerQuery) || 
+            card.description.toLowerCase().contains(lowerQuery))
+        .toList();
+  }
+
+  /// Search for masters by name or username
+  Future<List<AppUser>> searchMasters(String query) async {
+    if (query.isEmpty) return [];
+    
+    final snapshot = await _firestore.collection('users')
+        .where('role', isEqualTo: UserRole.master.name)
+        .where('isVisible', isEqualTo: true)
+        .get();
+        
+    final lowerQuery = query.toLowerCase();
+    return snapshot.docs
+        .map((doc) => AppUser.fromMap(doc.data()))
+        .where((user) => 
+            (user.displayName?.toLowerCase().contains(lowerQuery) ?? false) || 
+            (user.username?.toLowerCase().contains(lowerQuery) ?? false) ||
+            (user.businessName?.toLowerCase().contains(lowerQuery) ?? false))
+        .toList();
+  }
 }
+

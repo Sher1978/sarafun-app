@@ -19,7 +19,7 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.deepBlack,
       appBar: AppBar(
-        title: const Text('PROFILE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 2)),
+        title: const Text('PROFILE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 2, color: AppTheme.primaryGold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -27,7 +27,7 @@ class ProfileScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.white70),
             onPressed: () {
-              // TODO: Settings
+              context.push('/settings');
             },
           ),
           const Gap(8),
@@ -64,7 +64,7 @@ class ProfileScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryGold.withOpacity(0.2),
+            color: AppTheme.primaryGold.withValues(alpha: 0.2),
             blurRadius: 20,
             spreadRadius: 5,
           ),
@@ -92,23 +92,16 @@ class ProfileScreen extends ConsumerWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () async {
+          onPressed: () async {
           if (isMaster) {
-            context.push('/scanner');
+            context.go('/business');
           } else {
             context.push('/master-onboarding');
           }
         },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryGold,
-          foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 8,
-          shadowColor: AppTheme.primaryGold.withOpacity(0.4),
-        ),
+        // ...
         child: Text(
-          isMaster ? 'OPEN SCANNER' : 'LAUNCH MY BUSINESS',
+          isMaster ? 'OPEN DASHBOARD' : 'LAUNCH MY BUSINESS',
           style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
         ),
       ),
@@ -144,11 +137,29 @@ class ProfileScreen extends ConsumerWidget {
         ),
         const Gap(16),
         _buildInfoRow(
-          "Business Dashboard", 
-          "MANAGE", 
-          icon: Icons.business_center_outlined, 
-          onTap: () => context.push('/business')
+          "Settings", 
+          "OPEN", 
+          icon: Icons.settings_outlined, 
+          onTap: () => context.push('/settings')
         ),
+        if (user.role == UserRole.master) ...[
+          const Gap(16),
+          _buildInfoRow(
+            "Business Dashboard", 
+            "MANAGE", 
+            icon: Icons.business_center_outlined, 
+            onTap: () => context.go('/business')
+          ),
+        ],
+        if (user.role == UserRole.admin) ...[
+          const Gap(16),
+          _buildInfoRow(
+            "Admin Panel", 
+            "MANAGE", 
+            icon: Icons.admin_panel_settings_outlined, 
+            onTap: () => context.push('/admin')
+          ),
+        ],
       ],
     );
   }
@@ -161,7 +172,7 @@ class ProfileScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: AppTheme.cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isGold && onTap != null ? AppTheme.primaryGold.withOpacity(0.3) : Colors.white.withOpacity(0.05)),
+          border: Border.all(color: isGold && onTap != null ? AppTheme.primaryGold.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
