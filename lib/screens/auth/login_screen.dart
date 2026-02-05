@@ -51,7 +51,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               description: "Experience Dubai in a Lamborghini Huracan. Daily rentals available for VIP members.",
               priceStars: 2500,
               category: "Cars",
-              mediaUrls: ["https://images.unsplash.com/photo-1544636331-e268592031c1?q=80&w=1000&auto=format&fit=crop"],
+              mediaUrls: ["https://images.unsplash.com/photo-1503376763036-066120622c74?q=80&w=1920&auto=format&fit=crop"],
           );
           await firebaseService.createServiceCard(demoService);
       }
