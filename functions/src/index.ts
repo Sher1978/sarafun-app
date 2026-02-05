@@ -174,6 +174,10 @@ export const authenticateTelegram = functions.https.onCall(async (data, context)
 
         if (hash !== expectedHash) {
             console.warn("❌ Invalid Telegram hash");
+            console.warn("Received Hash:", hash);
+            console.warn("Expected Hash:", expectedHash);
+            console.warn("Data Check String:", dataCheckString);
+            console.warn("Bot Token First 4 Chars:", botToken.substring(0, 4));
             throw new functions.https.HttpsError("unauthenticated", "Invalid Telegram hash");
         }
 
