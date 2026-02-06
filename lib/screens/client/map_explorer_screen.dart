@@ -211,8 +211,6 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
             left: 0,
             right: 0,
             child: SafeArea(child: _buildFilterBar()),
-            right: 0,
-            child: _buildFilterBar(),
           ),
 
           // 3. Floating Glass Card (Bottom)
