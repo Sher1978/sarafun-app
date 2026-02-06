@@ -45,6 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+  <key>NSCameraUsageDescription</key>
+  <string>Camera permission is required for QR scanning.</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>This app needs access to location when open.</string>
 	<key>GMSServicesApiKey</key>
 	<string>YOUR_IOS_API_KEY_HERE</string>
 </dict>

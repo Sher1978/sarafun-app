@@ -69,7 +69,7 @@ class MasterDashboardScreen extends ConsumerWidget {
                   context,
                   icon: Icons.add_circle_outline,
                   label: "NEW SERVICE",
-                  onPressed: () => _showAddServiceDialog(context, ref),
+                  onPressed: () => context.push('/business/add-service'),
                 ),
                 _buildCompactToolButton(
                   context,
@@ -214,7 +214,7 @@ class MasterDashboardScreen extends ConsumerWidget {
 
   Widget _buildEmptyServiceTile(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => _showAddServiceDialog(context, ref),
+      onTap: () => context.push('/business/add-service'),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.02),

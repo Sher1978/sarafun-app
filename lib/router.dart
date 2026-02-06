@@ -25,6 +25,7 @@ import 'package:sara_fun/core/providers.dart';
 import 'package:sara_fun/screens/common/chat_list_screen.dart';
 import 'package:sara_fun/screens/common/chat_screen.dart';
 import 'package:sara_fun/screens/business/leads_screen.dart';
+import 'package:sara_fun/screens/business/add_service_screen.dart';
 
 // Dummy user for MVP demo
 const dummyClient = AppUser(
@@ -181,6 +182,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const WalletScreen(), // Reusing generic history for now or create specific? 
             // Wait, WalletScreen is for client? 
             // Better to make a placeholder or reuse HistoryScreen if possible.
+          ),
+          GoRoute(
+            path: 'add-service',
+            builder: (context, state) => const AddServiceScreen(),
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+import 'dart:typed_data';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,11 +29,48 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
   
   // New State for Floating Card
   AppUser? _selectedMaster;
+  BitmapDescriptor? _customMarkerIcon;
 
   @override
   void initState() {
     super.initState();
+    _generateCustomMarker();
     _determinePosition();
+  }
+
+  Future<void> _generateCustomMarker() async {
+    try {
+      final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+      final Canvas canvas = Canvas(pictureRecorder);
+      const int size = 120; // High res for sharper icons
+      
+      final Paint paintBlack = Paint()..color = Colors.black;
+      final Paint paintGold = Paint()..color = AppTheme.primaryGold;
+      
+      // Draw Pin Shape (Circle with Tip)
+      // For simplicity, let's do a "Premium Circle" - Black outer, Gold inner, Black center
+      
+      // 1. Outer Black Shadow/Border
+      canvas.drawCircle(const Offset(size / 2, size / 2), size / 2.0, paintBlack);
+      
+      // 2. Main Gold Body
+      canvas.drawCircle(const Offset(size / 2, size / 2), size / 2.2, paintGold);
+      
+      // 3. Inner Black Dot (Center)
+      canvas.drawCircle(const Offset(size / 2, size / 2), size / 5.0, paintBlack);
+      
+      final ui.Image image = await pictureRecorder.endRecording().toImage(size, size);
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (byteData != null) {
+        final Uint8List byteArray = byteData.buffer.asUint8List();
+        setState(() {
+          _customMarkerIcon = BitmapDescriptor.fromBytes(byteArray);
+        });
+      }
+    } catch (e) {
+      debugPrint("Error generating custom marker: $e");
+    }
   }
 
   Future<void> _determinePosition() async {
@@ -137,10 +176,7 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
                 return Marker(
                   markerId: MarkerId(master.uid),
                   position: LatLng(master.latitude!, master.longitude!),
-                  // infoWindow: InfoWindow(title: master.businessName ?? "Partner"), // Disable default info window to use custom card
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                     _selectedMaster?.uid == master.uid ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueYellow
-                  ),
+                  icon: _customMarkerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange), // Use custom icon if ready
                   onTap: () => _onMarkerTapped(master),
                 );
               }).toSet();
@@ -159,9 +195,10 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
                   markers: markers,
                   onTap: _onMapTapped,
                   myLocationEnabled: true,
-                  myLocationButtonEnabled: false, // Custom button below
+                  myLocationButtonEnabled: false,
                   zoomControlsEnabled: false,
                   mapToolbarEnabled: false,
+                  compassEnabled: false, // User requested to remove standard nav buttons
                   padding: const EdgeInsets.only(bottom: 200), // Push Google Logo up
                 ),
               );
@@ -170,8 +207,10 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
 
           // 2. Filter Bar (Top)
           Positioned(
-            top: 100, // Below AppBar
+            top: 110, // Adjusted position
             left: 0,
+            right: 0,
+            child: SafeArea(child: _buildFilterBar()),
             right: 0,
             child: _buildFilterBar(),
           ),
@@ -268,36 +307,36 @@ class _MapExplorerScreenState extends ConsumerState<MapExplorerScreen> {
   }
 
   Widget _buildFilterBar() {
-    return Container(
-      height: 60,
-      color: AppTheme.deepBlack,
+    return SizedBox(
+      height: 40, // Compact height
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const Gap(12),
+        separatorBuilder: (_, __) => const Gap(8),
         itemBuilder: (context, index) {
           final category = _categories[index];
           final isSelected = _selectedCategory == category;
           return GestureDetector(
             onTap: () => setState(() => _selectedCategory = category),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryGold : Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
+                color: isSelected ? AppTheme.primaryGold : Colors.black.withValues(alpha: 0.6), // Darker background
+                borderRadius: BorderRadius.circular(20), // More rounded
                 border: Border.all(
                   color: isSelected ? AppTheme.primaryGold : Colors.white12,
+                  width: 1,
                 ),
               ),
               child: Text(
                 category.toUpperCase(),
                 style: TextStyle(
-                  color: isSelected ? Colors.black : Colors.white70,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                  letterSpacing: 1,
+                  color: isSelected ? Colors.black : Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11, // Slightly larger but readable
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
