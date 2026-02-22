@@ -9,6 +9,7 @@ import 'package:sara_fun/models/service_card_model.dart';
 import 'package:sara_fun/models/review_model.dart';
 import 'package:sara_fun/screens/client/create_review_screen.dart';
 import 'package:sara_fun/models/lead_model.dart';
+import 'package:sara_fun/services/trust_engine.dart';
 
 class ServiceDetailScreen extends ConsumerWidget {
   final ServiceCard service;
@@ -45,7 +46,29 @@ class ServiceDetailScreen extends ConsumerWidget {
                             children: [
                               Text("${service.priceStars} Stars", 
                                   style: const TextStyle(color: AppTheme.primaryGold, fontSize: 24, fontWeight: FontWeight.bold)),
-                              const Gap(16),
+                              const Gap(12),
+                              StreamBuilder<List<Review>>(
+                                stream: firebaseService.getReviewsForService(service.id ?? 'unknown'),
+                                builder: (context, snapshot) {
+                                  final user = ref.watch(currentUserProvider).asData?.value;
+                                  final reviews = snapshot.data ?? [];
+                                  final smartScore = TrustEngine.calculateSmartScore(
+                                    reviews: reviews,
+                                    viewer: user,
+                                  );
+                                  return Row(
+                                    children: [
+                                      const Icon(Icons.star, color: AppTheme.primaryGold, size: 20),
+                                      const Gap(4),
+                                      Text(
+                                        smartScore > 0 ? smartScore.toStringAsFixed(1) : "4.8",
+                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white70),
+                                      ),
+                                    ],
+                                  );
+                                }
+                              ),
+                              const Gap(8),
                               Consumer(
                                 builder: (context, ref, _) {
                                   final user = ref.watch(currentUserProvider).asData?.value;
@@ -241,6 +264,9 @@ class _ReviewItem extends StatelessWidget {
             const Gap(8),
             if (review.comment.isNotEmpty)
               Text(review.comment),
+            
+            const Gap(12),
+            _buildABCDGrid(review.abcdScore),
             
             if (review.photoUrls.isNotEmpty) ...[
               const Gap(12),

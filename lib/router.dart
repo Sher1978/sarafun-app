@@ -168,10 +168,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/business',
-        builder: (context, state) {
-          final user = authState.asData?.value;
-          return MasterDashboardScreen(master: user ?? dummyMaster);
-        },
+        builder: (context, state) => const MasterDashboardScreen(),
         routes: [
            GoRoute(
             path: 'leads',

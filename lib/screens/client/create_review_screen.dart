@@ -19,7 +19,7 @@ class CreateReviewScreen extends ConsumerStatefulWidget {
 
 class _CreateReviewScreenState extends ConsumerState<CreateReviewScreen> {
   final _commentController = TextEditingController();
-  double _rating = 5.0;
+  final Map<String, int> _abcdScore = {'a': 5, 'b': 5, 'c': 5, 'd': 5};
   final List<Uint8List> _selectedImages = [];
   bool _isSubmitting = false;
 
@@ -67,7 +67,8 @@ class _CreateReviewScreenState extends ConsumerState<CreateReviewScreen> {
         serviceId: widget.serviceId,
         clientId: user.uid,
         clientName: user.telegramId.toString(), // Or fetch generic name
-        rating: _rating,
+        abcdScore: Map.from(_abcdScore),
+        isVerifiedPurchase: false, // Default until verified by deals
         comment: _commentController.text,
         photoUrls: photoUrls,
         createdAt: DateTime.now(),
@@ -98,20 +99,12 @@ class _CreateReviewScreenState extends ConsumerState<CreateReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Rate the Service", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const Gap(8),
-            Row(
-              children: List.generate(5, (index) {
-                return IconButton(
-                  onPressed: () => setState(() => _rating = index + 1.0),
-                  icon: Icon(
-                    index < _rating ? Icons.star : Icons.star_border,
-                    color: AppTheme.primaryGold,
-                    size: 32,
-                  ),
-                );
-              }),
-            ),
+            const Text("Assessment ABCD", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Gap(16),
+            _buildABCDSlider("A (Able)", "a", "Competence & Quality"),
+            _buildABCDSlider("B (Believable)", "b", "Price & Honesty"),
+            _buildABCDSlider("C (Connected)", "c", "Service & Comfort"),
+            _buildABCDSlider("D (Dependable)", "d", "Deadlines & Reliability"),
             const Gap(24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -182,6 +175,40 @@ class _CreateReviewScreenState extends ConsumerState<CreateReviewScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildABCDSlider(String label, String key, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+            Text(
+              _abcdScore[key].toString(),
+              style: const TextStyle(color: AppTheme.primaryGold, fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        Slider(
+          value: _abcdScore[key]!.toDouble(),
+          min: 1,
+          max: 5,
+          divisions: 4,
+          activeColor: AppTheme.primaryGold,
+          inactiveColor: Colors.white12,
+          onChanged: (val) => setState(() => _abcdScore[key] = val.toInt()),
+        ),
+        const Gap(8),
+      ],
     );
   }
 }

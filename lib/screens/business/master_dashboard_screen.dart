@@ -3,18 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:sara_fun/core/theme/app_theme.dart';
 import 'package:sara_fun/screens/business/master_location_picker.dart';
 import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/models/service_card_model.dart';
 import 'package:sara_fun/core/providers.dart';
+import 'package:sara_fun/core/dashboard_provider.dart';
 
 class MasterDashboardScreen extends ConsumerWidget {
-  final AppUser master;
+  const MasterDashboardScreen({super.key});
 
-  const MasterDashboardScreen({super.key, required this.master});
-
-  void _openLocationPicker(BuildContext context, WidgetRef ref) {
+  void _openLocationPicker(BuildContext context, WidgetRef ref, AppUser master) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -37,62 +37,123 @@ class MasterDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('BUSINESS PANEL', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16, color: AppTheme.primaryGold)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const BackButton(color: AppTheme.primaryGold),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.location_on, size: 20, color: Colors.white70),
-            onPressed: () => _openLocationPicker(context, ref),
+    final userAsync = ref.watch(currentUserProvider);
+    
+    return userAsync.when(
+      data: (master) {
+        if (master == null) return const Scaffold(body: Center(child: Text("User not found")));
+        final bool isLowBalance = !master.isVisible;
+
+        return Scaffold(
+          backgroundColor: AppTheme.deepBlack,
+          appBar: AppBar(
+            title: const Text('MASTER DASHBOARD', 
+              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 14, color: AppTheme.primaryGold)),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: const BackButton(color: AppTheme.primaryGold),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.location_on, size: 20, color: Colors.white70),
+                onPressed: () => _openLocationPicker(context, ref, master),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildBalanceCard(context, ref),
-            _buildAnalyticsCards(context, ref),
-            const Gap(32),
-            _buildSectionHeader("BUSINESS TOOLS"),
-            const Gap(16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _buildCompactToolButton(
-                  context,
-                  icon: Icons.add_circle_outline,
-                  label: "NEW SERVICE",
-                  onPressed: () => context.push('/business/add-service'),
+          body: Column(
+            children: [
+              // 1. Solvency Alert Banner
+              if (isLowBalance)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  color: const Color(0xFFCF6679), // Soft Red
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                      const Gap(12),
+                      const Expanded(
+                        child: Text(
+                          "LOW BALANCE! Scanner locked. Top up required.",
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => context.push('/wallet'),
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        child: const Text("TOP UP", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
+                      ),
+                    ],
+                  ),
+                ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+                 .fadeIn(duration: 500.ms)
+                 .fadeOut(delay: 500.ms, duration: 500.ms),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildBalanceCard(context, ref, master),
+                      const Gap(24),
+                      _buildAnalyticsCards(context, ref, master),
+                      const Gap(32),
+                      _buildSectionHeader("BUSINESS TOOLS"),
+                      const Gap(16),
+                      _buildToolGrid(context, isLowBalance),
+                      const Gap(32),
+                      _buildSectionHeader("MY SERVICES"),
+                      const Gap(16),
+                      _buildServiceList(ref, master),
+                      const Gap(32),
+                    ],
+                  ),
                 ),
-                _buildCompactToolButton(
-                  context,
-                  icon: Icons.history,
-                  label: "HISTORY",
-                  onPressed: () => context.push('/business/history'),
-                ),
-                _buildCompactToolButton(
-                  context,
-                  icon: Icons.contacts,
-                  label: "LEADS",
-                  onPressed: () => context.go('/business/leads'),
-                ),
-              ],
-            ),
-            const Gap(32),
-            _buildSectionHeader("MY SERVICES"),
-            const Gap(16),
-            _buildServiceList(ref),
-            const Gap(32),
-          ],
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, __) => Scaffold(body: Center(child: Text("Error: $e"))),
+    );
+  }
+
+  Widget _buildToolGrid(BuildContext context, bool locked) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        _buildCompactToolButton(
+          context,
+          icon: Icons.qr_code_scanner,
+          label: "SCAN QR",
+          onPressed: locked ? null : () => context.push('/scanner'),
+          isLocked: locked,
         ),
-      ),
+        _buildCompactToolButton(
+          context,
+          icon: Icons.add_circle_outline,
+          label: "NEW SERVICE",
+          onPressed: () => _showAddServiceDialog(context, ref, master),
+        ),
+        _buildCompactToolButton(
+          context,
+          icon: Icons.history,
+          label: "HISTORY",
+          onPressed: () => context.push('/business/history'),
+        ),
+        _buildCompactToolButton(
+          context,
+          icon: Icons.contacts,
+          label: "LEADS",
+          onPressed: () => context.push('/business/leads'),
+        ),
+      ],
     );
   }
 
@@ -108,7 +169,7 @@ class MasterDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildServiceList(WidgetRef ref) {
+  Widget _buildServiceList(WidgetRef ref, AppUser master) {
     final firebaseService = ref.read(firebaseServiceProvider);
     
     return StreamBuilder<List<ServiceCard>>(
@@ -247,179 +308,141 @@ class MasterDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompactToolButton(BuildContext context, {required IconData icon, required String label, required VoidCallback onPressed}) {
-    return SizedBox(
-      width: (MediaQuery.of(context).size.width - 48 - 12) / 2,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 16),
-        label: Text(label, style: const TextStyle(fontSize: 11)),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildCompactToolButton(BuildContext context, {
+    required IconData icon, 
+    required String label, 
+    required VoidCallback? onPressed,
+    bool isLocked = false,
+  }) {
+    return Opacity(
+      opacity: isLocked ? 0.3 : 1.0,
+      child: SizedBox(
+        width: (MediaQuery.of(context).size.width - 48 - 12) / 2,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(
+              color: AppTheme.cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+            child: Column(
+              children: [
+                Icon(icon, color: isLocked ? Colors.white38 : AppTheme.primaryGold, size: 24),
+                const Gap(8),
+                Text(
+                  label, 
+                  style: TextStyle(
+                    fontSize: 10, 
+                    fontWeight: FontWeight.bold, 
+                    letterSpacing: 1,
+                    color: isLocked ? Colors.white38 : Colors.white,
+                  ),
+                ),
+                if (isLocked)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Icon(Icons.lock, color: Colors.white38, size: 12),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBalanceCard(BuildContext context, WidgetRef ref) {
-    // 1. We need the services to calculate the threshold (Max Price * 0.2)
-    final firebaseService = ref.read(firebaseServiceProvider);
-    
-    return StreamBuilder<List<ServiceCard>>(
-      stream: firebaseService.getServiceCardsStream(master.uid),
-      builder: (context, snapshot) {
-        final cards = snapshot.data ?? [];
-        
-        // Calculate Threshold
-        double maxPrice = 0;
-        if (cards.isNotEmpty) {
-           maxPrice = cards
-               .where((c) => c.isActive)
-               .map((c) => c.priceStars.toDouble())
-               .fold(0, (prev, curr) => curr > prev ? curr : prev);
-        }
-        final threshold = maxPrice * 0.2;
-        final isLowBalance = master.depositBalance < threshold;
+  Widget _buildBalanceCard(BuildContext context, WidgetRef ref, AppUser master) {
+    final bool isLowBalance = !master.isVisible;
 
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            // Dynamic Background
-            gradient: isLowBalance 
-              ? const LinearGradient(
-                  colors: [Color(0xFF8B0000), Color(0xFF300000)], // Deep Red Warning
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : const LinearGradient(
-                  colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)], // Standard Dark Luxury
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isLowBalance ? Colors.redAccent : AppTheme.primaryGold.withValues(alpha: 0.1),
-              width: isLowBalance ? 1.5 : 1.0,
-            ),
-            boxShadow: isLowBalance 
-              ? [BoxShadow(color: Colors.red.withValues(alpha: 0.3), blurRadius: 12, spreadRadius: 2)]
-              : [],
-          ),
-          child: Column(
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isLowBalance ? const Color(0xFFCF6679) : AppTheme.primaryGold.withValues(alpha: 0.1),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("DEPOSIT BALANCE", style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                  if (isLowBalance)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(8)),
-                      child: const Text("OFFLINE", style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.w900)),
-                    ),
-                ],
-              ),
-              const Gap(8),
-              Text("${master.depositBalance} Stars", style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
-              const Gap(4),
-               Text(
-                "Threshold: ${threshold.toStringAsFixed(1)} Stars", 
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 10)
-              ),
-              const Gap(16),
-              
-              if (isLowBalance) ...[
-                const Divider(color: Colors.white24),
-                const Gap(8),
-                const Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
-                    Gap(8),
-                    Expanded(
-                      child: Text(
-                        "LOW BALANCE. SERVICES HIDDEN.",
-                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const Gap(12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Mock Top Up or Navigation
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Top Up feature coming soon via Telegram Payments!")));
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.red[900],
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text("TOP UP NOW", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ] else ...[
-                 const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 14),
-                    Gap(6),
-                    Text("active & visible", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                  ],
-                ),
-              ],
+              Text("DEPOSIT BALANCE", 
+                style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             ],
           ),
-        );
-      },
+          const Gap(12),
+          Text("${master.depositBalance.toStringAsFixed(0)} Stars", 
+            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+          const Gap(24),
+          if (isLowBalance)
+            ElevatedButton(
+              onPressed: () => context.push('/wallet'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFCF6679).withOpacity(0.1),
+                foregroundColor: const Color(0xFFCF6679),
+                elevation: 0,
+                side: const BorderSide(color: Color(0xFFCF6679)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child: const Text("TOP UP TO ACTIVATE", style: TextStyle(fontWeight: FontWeight.bold)),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                   Icon(Icons.check_circle, color: Colors.green, size: 16),
+                   Gap(8),
+                   Text("BUSINESS ONLINE", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
 
 
 
-  Widget _buildAnalyticsCards(BuildContext context, WidgetRef ref) {
-    final firebaseService = ref.read(firebaseServiceProvider);
+  Widget _buildAnalyticsCards(BuildContext context, WidgetRef ref, AppUser master) {
+    final statsAsync = ref.watch(masterStatsProvider);
     
-    return Column(
-      children: [
-        const Gap(32), // Spacing from Balance Card
-        Row(
-           children: [
-             Expanded(
-               child: StreamBuilder<int>(
-                 stream: firebaseService.getProfileViews(master.uid),
-                 builder: (context, snapshot) => _buildStatCard("PROFILE VIEWS", "${snapshot.data ?? 0}", Icons.visibility, Colors.purpleAccent),
-               ),
-             ),
-             const Gap(12),
-             Expanded(
-               child: StreamBuilder<int>(
-                 stream: firebaseService.getLeadsCount(master.uid),
-                 builder: (context, snapshot) => _buildStatCard("TOTAL LEADS", "${snapshot.data ?? 0}", Icons.person_add, Colors.blueAccent),
-               ),
-             ),
-           ],
-        ),
-        const Gap(12),
-        Row(
-           children: [
-             Expanded(
-               child: _buildStatCard("CONVERSION RATE", "0.0%", Icons.trending_up, Colors.greenAccent), // TODO: Calculate
-             ),
-             const Gap(12),
-             Expanded(
-               child: StreamBuilder<num>(
-                 stream: firebaseService.getMonthlyEarnings(master.uid),
-                 builder: (context, snapshot) => _buildStatCard("MONTHLY EARNINGS", "${snapshot.data?.toStringAsFixed(0) ?? 0} Stars", Icons.monetization_on, AppTheme.primaryGold),
-               ),
-             ),
-           ],
-        ),
-      ],
+    return statsAsync.when(
+      data: (stats) => Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _buildStatCard("VIEWS", "${stats.profileViews}", Icons.visibility, Colors.purpleAccent)),
+              const Gap(12),
+              Expanded(child: _buildStatCard("LEADS", "${stats.totalLeads}", Icons.person_add, Colors.blueAccent)),
+            ],
+          ),
+          const Gap(12),
+          Row(
+            children: [
+              Expanded(child: _buildStatCard("C-RATE", "${stats.conversionRate.toStringAsFixed(1)}%", Icons.trending_up, Colors.greenAccent)),
+              const Gap(12),
+              Expanded(child: _buildStatCard("EARNINGS", "${stats.monthlyEarnings.toStringAsFixed(0)}", Icons.monetization_on, AppTheme.primaryGold)),
+            ],
+          ),
+        ],
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, __) => Text("Error loading stats: $e"),
     );
   }
 
@@ -444,7 +467,7 @@ class MasterDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddServiceDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showAddServiceDialog(BuildContext context, WidgetRef ref, AppUser master) async {
     final titleController = TextEditingController();
     final descController = TextEditingController();
     final priceController = TextEditingController();

@@ -182,6 +182,17 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final master = ref.watch(currentUserProvider).value;
+    if (master != null && !master.isVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Access Denied: Low Balance")),
+        );
+        context.pop();
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text("SCAN CLIENT")),
       body: Column(

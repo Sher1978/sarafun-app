@@ -55,9 +55,10 @@ class TelegramService {
     try {
       if (isSupported) {
         // Direct access: initData is an object, we need the 'raw' string field
-        // The log showed: TelegramInitData{..., raw: ...}
-        // Assuming the package exposes .raw based on the log output
-        return TelegramWebApp.instance.initData.raw; 
+        // The package 0.3.3+ provides the raw query string via the 'raw' property
+        final raw = TelegramWebApp.instance.initData.raw;
+        Logger.log("Raw Telegram InitData length: ${raw.length}", name: 'TelegramService');
+        return raw; 
       }
     } catch (e) {
       Logger.error("Error fetching raw Telegram init data: $e", name: 'TelegramService');

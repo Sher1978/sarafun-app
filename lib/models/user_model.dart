@@ -37,6 +37,11 @@ class AppUser {
   final List<String> favoriteServices;
   final List<String> favoriteMasters;
 
+  // Trust Circles & Reputation
+  final Map<String, List<String>> trustCircles;
+  final int trustScore;
+  final List<String> expertCategories;
+
   final bool onboardingComplete;
 
   const AppUser({
@@ -65,6 +70,9 @@ class AppUser {
     this.businessOpenerId,
     this.favoriteServices = const [],
     this.favoriteMasters = const [],
+    this.trustCircles = const {'c1': [], 'c2': [], 'c3': [], 'c4': []},
+    this.trustScore = 0,
+    this.expertCategories = const [],
     this.onboardingComplete = false,
   });
 
@@ -95,6 +103,9 @@ class AppUser {
       'businessOpenerId': businessOpenerId,
       'favoriteServices': favoriteServices,
       'favoriteMasters': favoriteMasters,
+      'trustCircles': trustCircles,
+      'trustScore': trustScore,
+      'expertCategories': expertCategories,
       'onboardingComplete': onboardingComplete,
     };
   }
@@ -126,6 +137,12 @@ class AppUser {
       businessOpenerId: map['businessOpenerId'] as String?,
       favoriteServices: List<String>.from(map['favoriteServices'] ?? []),
       favoriteMasters: List<String>.from(map['favoriteMasters'] ?? []),
+      trustCircles: (map['trustCircles'] as Map?)?.map(
+            (k, v) => MapEntry(k as String, List<String>.from(v ?? [])),
+          ) ??
+          {'c1': [], 'c2': [], 'c3': [], 'c4': []},
+      trustScore: (map['trustScore'] as num?)?.toInt() ?? 0,
+      expertCategories: List<String>.from(map['expertCategories'] ?? []),
       onboardingComplete: map['onboardingComplete'] as bool? ?? false,
     );
   }
@@ -163,6 +180,9 @@ class AppUser {
     String? businessOpenerId,
     List<String>? favoriteServices,
     List<String>? favoriteMasters,
+    Map<String, List<String>>? trustCircles,
+    int? trustScore,
+    List<String>? expertCategories,
     bool? onboardingComplete,
   }) {
     return AppUser(
@@ -191,6 +211,9 @@ class AppUser {
       businessOpenerId: businessOpenerId ?? this.businessOpenerId,
       favoriteServices: favoriteServices ?? this.favoriteServices,
       favoriteMasters: favoriteMasters ?? this.favoriteMasters,
+      trustCircles: trustCircles ?? this.trustCircles,
+      trustScore: trustScore ?? this.trustScore,
+      expertCategories: expertCategories ?? this.expertCategories,
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
     );
   }

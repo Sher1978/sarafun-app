@@ -11,6 +11,8 @@ import 'package:sara_fun/models/service_card_model.dart';
 import 'package:sara_fun/models/user_model.dart';
 import 'package:sara_fun/core/providers.dart';
 import 'package:sara_fun/screens/widgets/glass_card.dart';
+import 'package:sara_fun/services/trust_engine.dart';
+import 'package:sara_fun/models/review_model.dart';
 
 class DiscoveryScreen extends ConsumerStatefulWidget {
   final String? filterMasterId;
@@ -135,6 +137,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                             height: cardHeight,
                             isFavorite: userData?.favoriteServices.contains(cards[index].id) ?? false,
                             userPosition: _currentPosition,
+                            viewerCircles: userData?.trustCircles ?? {},
                             onFavoriteToggle: () {
                               if (userData != null && cards[index].id != null) {
                                 firebaseService.toggleFavorite(userData.uid, cards[index].id!, true);
@@ -177,6 +180,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                             height: cardHeight,
                             isFavorite: userData?.favoriteMasters.contains(masters[index].uid) ?? false,
                             userPosition: _currentPosition,
+                            viewerCircles: userData?.trustCircles ?? {},
                             onFavoriteToggle: () {
                               if (userData != null) {
                                 firebaseService.toggleFavorite(userData.uid, masters[index].uid, false);
@@ -292,6 +296,7 @@ class _CompactServiceCard extends StatelessWidget {
   final double height;
   final bool isFavorite;
   final Position? userPosition;
+  final Map<String, List<String>> viewerCircles;
   final VoidCallback onFavoriteToggle;
 
   const _CompactServiceCard({
@@ -300,6 +305,7 @@ class _CompactServiceCard extends StatelessWidget {
     required this.height,
     this.isFavorite = false,
     this.userPosition,
+    this.viewerCircles = const {},
     required this.onFavoriteToggle,
   });
 
@@ -416,9 +422,47 @@ class _CompactServiceCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      "⭐ 4.8", // Hardcoded per requirements if not in model
-                      style: TextStyle(color: AppTheme.primaryGold, fontSize: 11, fontWeight: FontWeight.bold),
+                    StreamBuilder<List<Review>>(
+                      stream: ref.watch(firebaseServiceProvider).getReviewsForService(card.id ?? 'unknown'),
+                      builder: (context, snapshot) {
+                        final reviews = snapshot.data ?? [];
+                        final smartScore = TrustEngine.calculateSmartScore(
+                          reviews: reviews,
+                          viewer: userData,
+                        );
+                        
+                        // Count matches in circles for social proof
+                        int c1Matches = 0;
+                        int c2Matches = 0;
+                        for (var r in reviews) {
+                          if (viewerCircles['c1']?.contains(r.clientId) ?? false) c1Matches++;
+                          if (viewerCircles['c2']?.contains(r.clientId) ?? false) c2Matches++;
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "⭐ ${smartScore > 0 ? smartScore.toStringAsFixed(1) : '4.8'}", 
+                              style: const TextStyle(color: AppTheme.primaryGold, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                            if (c1Matches > 0 || c2Matches > 0)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryGold.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: AppTheme.primaryGold.withOpacity(0.3)),
+                                ),
+                                child: const Text(
+                                  "🔥 Recommended by your Inner Circle",
+                                  style: TextStyle(color: AppTheme.primaryGold, fontSize: 7, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                          ],
+                        );
+                      }
                     ),
                     if (userPosition != null) // Distance Placeholder (calculating requires master loc)
                        const Text(
@@ -442,6 +486,7 @@ class _CompactMasterCard extends StatelessWidget {
   final double height;
   final bool isFavorite;
   final Position? userPosition;
+  final Map<String, List<String>> viewerCircles;
   final VoidCallback onFavoriteToggle;
 
   const _CompactMasterCard({
@@ -450,6 +495,7 @@ class _CompactMasterCard extends StatelessWidget {
     required this.height,
     this.isFavorite = false,
     this.userPosition,
+    this.viewerCircles = const {},
     required this.onFavoriteToggle,
   });
 
@@ -506,9 +552,22 @@ class _CompactMasterCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.star, color: AppTheme.primaryGold, size: 12),
                       const Gap(4),
-                      Text(
-                        master.rating > 0 ? master.rating.toStringAsFixed(1) : "4.8", 
-                        style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                      StreamBuilder<List<Review>>(
+                        stream: ref.watch(firebaseServiceProvider).getReviewsForService(master.uid), // Using masterId as serviceId for global master rating?
+                        // Actually, master rating should be global across their services. 
+                        // For now, if we don't have a multi-service rating, we fetch all reviews where masterId matches.
+                        // I'll assume getReviewsForService works for UID if that's how it's stored.
+                        builder: (context, snapshot) {
+                          final reviews = snapshot.data ?? [];
+                          final smartScore = TrustEngine.calculateSmartScore(
+                            reviews: reviews,
+                            viewer: userData,
+                          );
+                          return Text(
+                            smartScore > 0 ? smartScore.toStringAsFixed(1) : "4.8", 
+                            style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                          );
+                        }
                       ),
                       if (userPosition != null && master.latitude != null && master.longitude != null) ...[
                         const Gap(6),

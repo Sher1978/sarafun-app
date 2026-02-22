@@ -130,12 +130,104 @@ export const onDealCreate = functions.firestore
 
 
 // ============================================================================
+// 3. Trust Circles & Reputation (ABCD)
+// ============================================================================
+
+/**
+ * Trigger: On Review Creation
+ * Updates author's trustScore if they are verified.
+ */
+export const onReviewCreate = functions.firestore
+    .document("reviews/{reviewId}")
+    .onWrite(async (change, context) => {
+        const newData = change.after.exists ? change.after.data() : null;
+        if (!newData) return; // Deleted
+
+        const authorId = newData.authorId || newData.client_id;
+        const serviceId = newData.serviceId || newData.service_id;
+
+        // 1. Verify Purchase (Check if there's a deal between author and master for this service)
+        const dealsSnapshot = await db.collection("deals")
+            .where("clientId", "==", authorId)
+            .where("serviceId", "==", serviceId)
+            .limit(1)
+            .get();
+
+        const isVerified = !dealsSnapshot.empty;
+        if (isVerified && !newData.is_verified_purchase) {
+            await change.after.ref.update({ is_verified_purchase: true });
+        }
+    });
+
+/**
+ * Trigger: On Deal Completion
+ * Rewards whoever recommended this service to the buyer.
+ */
+export const onDealRewarded = functions.firestore
+    .document("deals/{dealId}")
+    .onUpdate(async (change, context) => {
+        const deal = change.after.data();
+        const oldDeal = change.before.data();
+
+        // Only fire when status moves to 'completed'
+        if (deal.status !== "completed" || oldDeal.status === "completed") return;
+
+        const buyerId = deal.clientId;
+        const serviceId = deal.serviceId;
+
+        // 1. Find all reviews for this service
+        const reviewsSnapshot = await db.collection("reviews")
+            .where("service_id", "==", serviceId)
+            .where("is_verified_purchase", "==", true)
+            .get();
+
+        for (const doc of reviewsSnapshot.docs) {
+            const review = doc.data();
+            const authorId = review.authorId || review.client_id;
+            if (authorId === buyerId) continue;
+
+            // 2. Check if author is in buyer's C-1 or C-2 circle
+            const buyerDoc = await db.collection("users").doc(buyerId).get();
+            const buyerData = buyerDoc.data();
+            const circles = buyerData?.trustCircles || {};
+
+            const isC1 = circles.c1?.includes(authorId);
+            const isC2 = circles.c2?.includes(authorId) ||
+                buyerData?.referralPath?.includes(authorId) ||
+                buyerData?.favoriteMasters?.includes(authorId);
+
+            if (isC1 || isC2) {
+                // REWARD AUTHOR
+                let points = 10; // Base for recommendation
+                const rating = review.total_score || review.rating;
+                if (rating > 4) points += 5;
+                if (rating < 3) points -= 20; // Adjusted per user request
+
+                await db.collection("users").doc(authorId).update({
+                    trustScore: admin.firestore.FieldValue.increment(points)
+                });
+
+                console.log(`[Trust] Rewarding user ${authorId} with ${points} pts for recommendation to ${buyerId}`);
+                await logToSystem(authorId, "TRUST_REWARD", `Earned ${points} points for recommendation of service ${serviceId}`);
+            }
+        }
+    });
+
+
+// ============================================================================
 // 3. Telegram Authentication (Callable)
 // ============================================================================
 
 export const authenticateTelegram = functions.https.onCall(async (data, context) => {
     // 1. The "First Breath" Log
     console.log("🚀 authenticateTelegram called with data:", JSON.stringify(data));
+    // TODO: SHER, ВСТАВЬ СВОЙ ТОКЕН ОТ BOTFATHER СЮДА ДЛЯ ТЕСТА:
+    const botToken = process.env.TELEGRAM_BOT_TOKEN || ""; // Замени на реальный токен или используй env
+    if (!botToken) {
+        console.error("CRITICAL ERROR: Telegram Bot Token is missing!");
+        throw new functions.https.HttpsError("unauthenticated", "Bot token not configured on backend");
+    }
+    let initData = data.initData;
 
     try {
         // 2. Defensive input check
@@ -143,17 +235,9 @@ export const authenticateTelegram = functions.https.onCall(async (data, context)
             throw new functions.https.HttpsError("invalid-argument", "Missing initData");
         }
 
-        // 2b. URL Decode if necessary (Client might send encoded string)
-        if (initData.includes("%")) {
-            try {
-                initData = decodeURIComponent(initData);
-                console.log("decoded initData:", initData);
-            } catch (e) {
-                console.warn("Failed to decodeURIComponent initData", e);
-            }
-        }
-
         // 3. Validate Telegram Hash
+        // NOTE: We do NOT use decodeURIComponent on the whole string here.
+        // URLSearchParams will handle decoding of individual values correctly.
         const parsedData = new URLSearchParams(initData);
         const hash = parsedData.get("hash");
         parsedData.delete("hash");
